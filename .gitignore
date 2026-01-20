@@ -48,3 +48,6 @@ android/
 *.key
 *.mobileprovision
 *.orig.*
+
+# Vercel
+.vercel
