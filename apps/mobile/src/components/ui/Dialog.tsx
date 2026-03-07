@@ -1,7 +1,13 @@
 import * as DialogPrimitive from "@rn-primitives/dialog";
 import { X } from "lucide-react-native";
 import * as React from "react";
-import { Platform, Text as RNText, View, type ViewProps } from "react-native";
+import {
+	Keyboard,
+	Platform,
+	Text as RNText,
+	View,
+	type ViewProps,
+} from "react-native";
 import { FullWindowOverlay as RNFullWindowOverlay } from "react-native-screens";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
@@ -48,6 +54,10 @@ function DialogContent(
 		},
 ) {
 	const { className, portalHost, centered, children, ...restProps } = props;
+
+	React.useEffect(() => {
+		Keyboard.dismiss();
+	}, []);
 
 	return (
 		<DialogPortal hostName={portalHost}>

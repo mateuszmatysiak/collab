@@ -54,6 +54,40 @@ Data ustalenia: 2026-03-07
 - Działa zarówno na frontend (react-hook-form z zodResolver) jak i backend (@hono/zod-validator)
 - String składający się z samych spacji poprawnie failuje walidację `.min(1)`
 
+### 2026-03-08: Grupa 2 — UX: Klawiatura i interakcje (MAT-62, MAT-77, MAT-68, MAT-61)
+
+#### MAT-62 + MAT-77: Keyboard-aware scroll + Login wyżej — DONE
+
+**Pliki:** `apps/mobile/app/(auth)/login.tsx`, `apps/mobile/app/(auth)/register.tsx`
+
+**Problem:** Klawiatura zasłaniała inputy na ekranach auth. Formularz logowania był wycentrowany (`justify-center`), co przy otwartej klawiaturze powodowało częściowe zasłonięcie pól.
+
+**Rozwiązanie:** Owinięto oba ekrany auth w `KeyboardAvoidingView` + `ScrollView` (built-in RN, niezależne od zewnętrznych bibliotek):
+- **Login:** `justify-center` → `justify-start pt-[25%]` — formularz wyżej, widoczny przy klawiaturze
+- **Register:** `justify-center` → `justify-start pt-[15%]` — mniej top padding bo więcej pól (3 vs 2)
+- `KeyboardAvoidingView` z `behavior="padding"` (iOS) / `"height"` (Android)
+- `ScrollView` z `keyboardShouldPersistTaps="handled"` — umożliwia scroll przy otwartej klawiaturze
+
+**Uwaga:** Lista elementów (`ListItemsContent`) już miała `KeyboardAvoidingView` — bez zmian.
+
+#### MAT-68: Touch targets + Checkbox — DONE
+
+**Plik:** `apps/mobile/src/components/ui/checkbox.tsx`
+
+**Problem:** Checkbox miał `size-5` (20px) — poniżej minimum 44px (Apple HIG). Na fizycznych urządzeniach (Pixel 7a) trudno było trafić w checkbox.
+
+**Rozwiązanie:**
+- Zwiększono rozmiar z `size-5` (20px) do `size-7` (28px)
+- Dodano `hitSlop={8}` — efektywny touch target: 28 + 8×2 = 44px
+
+#### MAT-61: Blur input przy dialogu — DONE
+
+**Plik:** `apps/mobile/src/components/ui/Dialog.tsx`
+
+**Problem:** Po otwarciu dialogu klawiatura i focus na inpucie pod spodem pozostawały aktywne.
+
+**Rozwiązanie:** Dodano `Keyboard.dismiss()` w `useEffect` wewnątrz `DialogContent` — przy każdym otwarciu dialogu klawiatura jest chowana. Dialogi z własnymi inputami (np. `CategorySelectDialog` w trybie tworzenia) mają `autoFocus` na swoich polach, więc focus przenosi się automatycznie.
+
 ### 2026-03-08: Grupa 3 — Cleanup (MAT-87)
 
 #### MAT-87: Usunięcie WakeUpScreen — DONE
@@ -81,13 +115,13 @@ Data ustalenia: 2026-03-07
 
 **Uzasadnienie:** Bugi blokują codzienne użytkowanie. MAT-90 jest najważniejszy bo wpływa na core UX przy każdej interakcji.
 
-### 2. UX — Klawiatura i interakcje
+### 2. UX — Klawiatura i interakcje — DONE (2026-03-08)
 
-| # | Zadanie | Priorytet | Plan |
-|---|---------|-----------|------|
-| 4 | **MAT-62 + MAT-77** — Keyboard-aware scroll + login wyżej | High | [Plan](./MAT-62-keyboard-aware-scroll.md) |
-| 5 | **MAT-68** — Touch targets + Checkbox fix | High | [Plan](./MAT-68-touch-targets-checkbox.md) |
-| 6 | **MAT-61** — Blur input przy dialogu | Low | [Plan](./MAT-61-blur-input-on-dialog.md) |
+| # | Zadanie | Priorytet | Status | Plan |
+|---|---------|-----------|--------|------|
+| 4 | **MAT-62 + MAT-77** — Keyboard-aware scroll + login wyżej | High | DONE | [Plan](./MAT-62-keyboard-aware-scroll.md) |
+| 5 | **MAT-68** — Touch targets + Checkbox fix | High | DONE | [Plan](./MAT-68-touch-targets-checkbox.md) |
+| 6 | **MAT-61** — Blur input przy dialogu | Low | DONE | [Plan](./MAT-61-blur-input-on-dialog.md) |
 
 **Uzasadnienie:** Klawiatura zasłaniająca inputy i niereagujące checkboxy krytycznie wpływają na UX.
 
