@@ -46,12 +46,37 @@ export const useUpdateItem = (listId: string, itemId: string) => {
 			apiClient
 				.patch<{ item: ListItem }>(`/api/lists/${listId}/items/${itemId}`, data)
 				.then((res) => res.data.item),
-		onSuccess: (updatedItem) => {
+		onMutate: async (data) => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
 				(oldItems = []) =>
-					oldItems.map((item) => (item.id === itemId ? updatedItem : item)),
+					oldItems.map((item) =>
+						item.id === itemId ? { ...item, ...data } : item,
+					),
 			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
 		},
 	});
 };
@@ -64,11 +89,34 @@ export const useDeleteItem = (listId: string, itemId: string) => {
 			apiClient
 				.delete(`/api/lists/${listId}/items/${itemId}`)
 				.then((res) => res.data),
-		onSuccess: () => {
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
 				(oldItems = []) => oldItems.filter((item) => item.id !== itemId),
 			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
 			});
@@ -117,6 +165,11 @@ export const useReorderItems = (listId: string) => {
 					context.previousItems,
 				);
 			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
 		},
 	});
 };

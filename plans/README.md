@@ -2,15 +2,69 @@
 
 Data ustalenia: 2026-03-07
 
+---
+
+## Realizacja — log zmian
+
+### 2026-03-08: Grupa 1 — Bugi i stabilność (MAT-90, MAT-88, MAT-65)
+
+#### MAT-90: Optimistic updates / lag Checkbox — DONE
+
+**Plik:** `apps/mobile/src/api/items.api.ts`
+
+**Problem:** Wszystkie mutacje (toggle checkbox, delete, update) aktualizowały UI dopiero po odpowiedzi API (`onSuccess`). Na fizycznych urządzeniach (Pixel 7a, Samsung) powodowało to widoczny lag.
+
+**Rozwiązanie:** Dodano pełny optimistic update pattern do trzech mutacji:
+
+- **`useUpdateItem`** (toggle checkbox — najczęstsza operacja): `onMutate` natychmiast aktualizuje cache (`cancelQueries` → snapshot → `setQueryData`), `onError` robi rollback do snapshota, `onSettled` synchronizuje z serwerem przez `invalidateQueries`.
+- **`useDeleteItem`**: analogiczny optimistic pattern — element znika natychmiast, rollback przy błędzie.
+- **`useReorderItems`**: dodano brakujący `onSettled` z `invalidateQueries` (wcześniej nie synchronizował po zakończeniu).
+
+**Uwaga:** `useCreateItem` pozostawiony z `onSuccess` — nie znamy ID elementu przed odpowiedzią serwera, więc optimistic update jest mniej praktyczny.
+
+#### MAT-88: Fix utrzymania sesji — DONE
+
+**Plik:** `apps/backend/src/controllers/auth.controller.ts`
+
+**Root cause:** Endpoint `/api/auth/me` używał `optionalAuthMiddleware`, który przy wygasłym access tokenie (TTL: 15min) **cicho ignorował błąd weryfikacji** i zwracał `{ user: null }` zamiast 401. Axios interceptor na mobile nigdy nie dostawał 401, więc nie miał szansy odświeżyć tokena przez refresh endpoint (refresh token TTL: 30 dni).
+
+**Flow przed fixem:**
+1. Użytkownik zamyka app → access token wygasa po 15min
+2. Otwarcie app → `useMe()` → GET /api/auth/me z wygasłym tokenem
+3. `optionalAuthMiddleware` łapie błąd weryfikacji, ignoruje, zwraca `{ user: null }`
+4. Mobile: `isAuthenticated = false` → redirect do loginu
+
+**Rozwiązanie:** Zmiana `/api/auth/me` z `optionalAuthMiddleware` na `authMiddleware`.
+
+**Flow po fixie:**
+1. Otwarcie app → GET /api/auth/me z wygasłym tokenem
+2. `authMiddleware` → 401 Unauthorized
+3. Axios interceptor łapie 401 → pobiera refresh token z SecureStore → POST /api/auth/refresh
+4. Backend rotuje tokeny (nowy access + nowy refresh) → interceptor zapisuje w SecureStore
+5. Retry oryginalnego requestu z nowym access tokenem → sukces → użytkownik zalogowany
+
+**Usunięto:** Import `optionalAuthMiddleware` z auth.controller.ts (nie jest już używany nigdzie w codebase).
+
+#### MAT-65: Fix pustego znaku w logowaniu — DONE
+
+**Plik:** `packages/shared/src/validators/auth.validator.ts`
+
+**Rozwiązanie:** Dodano `.trim()` do walidatorów Zod w `loginSchema` i `registerSchema` dla pól: `name`, `login`, `password`. Trim jest aplikowany przed walidacją `.min()` / `.max()`, więc:
+- Spacje na początku/końcu są automatycznie usuwane
+- Działa zarówno na frontend (react-hook-form z zodResolver) jak i backend (@hono/zod-validator)
+- String składający się z samych spacji poprawnie failuje walidację `.min(1)`
+
+---
+
 ## Kolejność realizacji (priorytet)
 
-### 1. Bugi i stabilność (najwyższy priorytet)
+### 1. Bugi i stabilność (najwyższy priorytet) — DONE (2026-03-08)
 
-| # | Zadanie | Priorytet | Plan |
-|---|---------|-----------|------|
-| 1 | **MAT-90** — Optimistic updates / lag Checkbox | Urgent | [Plan](./MAT-90-optimistic-updates-checkbox-lag.md) |
-| 2 | **MAT-88** — Fix utrzymania sesji | High | [Plan](./MAT-88-fix-session-persistence.md) |
-| 3 | **MAT-65** — Fix pustego znaku w logowaniu | High | [Plan](./MAT-65-fix-empty-char-login-input.md) |
+| # | Zadanie | Priorytet | Status | Plan |
+|---|---------|-----------|--------|------|
+| 1 | **MAT-90** — Optimistic updates / lag Checkbox | Urgent | DONE | [Plan](./MAT-90-optimistic-updates-checkbox-lag.md) |
+| 2 | **MAT-88** — Fix utrzymania sesji | High | DONE | [Plan](./MAT-88-fix-session-persistence.md) |
+| 3 | **MAT-65** — Fix pustego znaku w logowaniu | High | DONE | [Plan](./MAT-65-fix-empty-char-login-input.md) |
 
 **Uzasadnienie:** Bugi blokują codzienne użytkowanie. MAT-90 jest najważniejszy bo wpływa na core UX przy każdej interakcji.
 
