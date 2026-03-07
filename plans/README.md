@@ -54,6 +54,19 @@ Data ustalenia: 2026-03-07
 - Działa zarówno na frontend (react-hook-form z zodResolver) jak i backend (@hono/zod-validator)
 - String składający się z samych spacji poprawnie failuje walidację `.min(1)`
 
+### 2026-03-08: Grupa 3 — Cleanup (MAT-87)
+
+#### MAT-87: Usunięcie WakeUpScreen — DONE
+
+**Usunięte pliki:**
+- `apps/mobile/src/components/guards/ServerWakeUpScreen.tsx`
+- `apps/mobile/src/components/guards/ServerHealthGuard.tsx`
+- `apps/mobile/src/api/serverHealth.api.ts`
+
+**Zmienione pliki:**
+- `apps/mobile/app/index.tsx` — usunięto `ServerHealthGuard` wrapper, spłaszczono `IndexContent` do default exportu. Aplikacja startuje bezpośrednio do ekranu auth lub main.
+- `apps/mobile/src/api/queryKeys.ts` — usunięto klucz `server.health`.
+
 ---
 
 ## Kolejność realizacji (priorytet)
@@ -78,11 +91,11 @@ Data ustalenia: 2026-03-07
 
 **Uzasadnienie:** Klawiatura zasłaniająca inputy i niereagujące checkboxy krytycznie wpływają na UX.
 
-### 3. Cleanup (szybkie wygrane)
+### 3. Cleanup (szybkie wygrane) — DONE (2026-03-08)
 
-| # | Zadanie | Priorytet | Plan |
-|---|---------|-----------|------|
-| 7 | **MAT-87** — Usunięcie WakeUpScreen | High | [Plan](./MAT-87-remove-wakeup-screen.md) |
+| # | Zadanie | Priorytet | Status | Plan |
+|---|---------|-----------|--------|------|
+| 7 | **MAT-87** — Usunięcie WakeUpScreen | High | DONE | [Plan](./MAT-87-remove-wakeup-screen.md) |
 
 ### 4. Infrastruktura (fundament pod dalszy rozwój)
 

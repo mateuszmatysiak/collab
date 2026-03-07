@@ -1,7 +1,4 @@
 export const queryKeys = {
-	server: {
-		health: ["server", "health"] as const,
-	},
 	lists: {
 		all: ["lists"] as const,
 		detail: (id: string) => ["lists", id] as const,
