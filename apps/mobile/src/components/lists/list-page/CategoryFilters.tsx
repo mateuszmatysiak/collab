@@ -12,7 +12,10 @@ import { getCategoryIcon } from "@/lib/icons";
 interface CategoryFiltersProps {
 	listId: string;
 	selectedCategoryId: string | null;
-	onCategoryChange: (categoryId: string | null) => void;
+	onCategoryChange: (
+		categoryId: string | null,
+		categoryType: string | null,
+	) => void;
 }
 
 export function CategoryFilters(props: CategoryFiltersProps) {
@@ -59,7 +62,7 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 				<Button
 					variant={selectedCategoryId === null ? "default" : "outline"}
 					size="sm"
-					onPress={() => onCategoryChange(null)}
+					onPress={() => onCategoryChange(null, null)}
 				>
 					<Text>Wszystkie kategorie</Text>
 				</Button>
@@ -74,7 +77,12 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 							key={category.id}
 							variant={isSelected ? "default" : "outline"}
 							size="sm"
-							onPress={() => onCategoryChange(category.id)}
+							onPress={() =>
+								onCategoryChange(
+									isSelected ? null : category.id,
+									isSelected ? null : category.type,
+								)
+							}
 							className="flex-row items-center gap-2"
 						>
 							{CategoryIconComponent && (
@@ -95,7 +103,12 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 					<Button
 						variant={isUncategorizedSelected ? "default" : "outline"}
 						size="sm"
-						onPress={() => onCategoryChange(UNCATEGORIZED_FILTER)}
+						onPress={() =>
+							onCategoryChange(
+								isUncategorizedSelected ? null : UNCATEGORIZED_FILTER,
+								null,
+							)
+						}
 					>
 						<Icon
 							as={Ban}

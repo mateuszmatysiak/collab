@@ -299,6 +299,43 @@ export async function deleteItem(
 	await db.delete(listItems).where(eq(listItems.id, itemId));
 }
 
+export async function resetAllItems(listId: string, userId: string) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do edycji elementów tej listy",
+		);
+	}
+
+	await db
+		.update(listItems)
+		.set({ isCompleted: false })
+		.where(and(eq(listItems.listId, listId), eq(listItems.isCompleted, true)));
+}
+
+export async function deleteCompletedItems(listId: string, userId: string) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do usuwania elementów z tej listy",
+		);
+	}
+
+	await db
+		.delete(listItems)
+		.where(and(eq(listItems.listId, listId), eq(listItems.isCompleted, true)));
+}
+
 export async function reorderItems(
 	listId: string,
 	userId: string,

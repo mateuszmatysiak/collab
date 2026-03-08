@@ -1,6 +1,6 @@
 import type { CategoryType } from "@collab-list/shared/types";
 import { Ban, GripVertical, Plus } from "lucide-react-native";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, type TextInput, View } from "react-native";
 import { useListCategories } from "@/api/categories.api";
 import { useCreateItem } from "@/api/items.api";
@@ -8,16 +8,19 @@ import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
+import { UNCATEGORIZED_FILTER } from "@/lib/constants";
 import { getCategoryIcon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { CategorySelectDialog } from "./CategorySelectDialog";
 
 interface AddItemCardProps {
 	listId: string;
+	filterCategoryId?: string | null;
+	filterCategoryType?: CategoryType | null;
 }
 
 export function AddItemCard(props: AddItemCardProps) {
-	const { listId } = props;
+	const { listId, filterCategoryId = null, filterCategoryType = null } = props;
 
 	const titleInputRef = useRef<TextInput>(null);
 	const descriptionInputRef = useRef<TextInput>(null);
@@ -31,6 +34,20 @@ export function AddItemCard(props: AddItemCardProps) {
 
 	const { mutate: createItem, isPending } = useCreateItem(listId);
 	const { data: categories = [] } = useListCategories(listId);
+
+	useEffect(() => {
+		if (
+			filterCategoryId &&
+			filterCategoryId !== UNCATEGORIZED_FILTER &&
+			filterCategoryType
+		) {
+			setCategoryId(filterCategoryId);
+			setCategoryType(filterCategoryType);
+		} else {
+			setCategoryId(null);
+			setCategoryType(null);
+		}
+	}, [filterCategoryId, filterCategoryType]);
 
 	const selectedCategory = useMemo(() => {
 		if (!categoryId) return null;

@@ -39,7 +39,7 @@ export function ListCard(props: ListCardProps) {
 					</View>
 					<View className="flex-row items-center gap-2">
 						<Text className="text-sm text-muted-foreground">
-							{list.itemsCount} elementów
+							{list.completedCount}/{list.itemsCount}
 						</Text>
 						<ManageUsers list={list} />
 					</View>

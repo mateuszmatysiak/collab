@@ -7,9 +7,11 @@ import type { Context } from "hono";
 import { authMiddleware } from "../middleware/auth";
 import {
 	createItem,
+	deleteCompletedItems,
 	deleteItem,
 	getItems,
 	reorderItems,
+	resetAllItems,
 	updateItem,
 } from "../services/items.service";
 import { createJsonValidator, getValidatedJson } from "../utils/validator";
@@ -75,6 +77,30 @@ export const deleteItemController = [
 		await deleteItem(itemId, listId, userId);
 
 		return c.json({ message: "Element usunięty pomyślnie" });
+	},
+];
+
+export const resetAllItemsController = [
+	authMiddleware,
+	async (c: Context) => {
+		const userId = c.get("userId");
+		const listId = c.req.param("listId");
+
+		await resetAllItems(listId, userId);
+
+		return c.json({ message: "Wszystkie elementy zostały odznaczone" });
+	},
+];
+
+export const deleteCompletedItemsController = [
+	authMiddleware,
+	async (c: Context) => {
+		const userId = c.get("userId");
+		const listId = c.req.param("listId");
+
+		await deleteCompletedItems(listId, userId);
+
+		return c.json({ message: "Zaznaczone elementy zostały usunięte" });
 	},
 ];
 

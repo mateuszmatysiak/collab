@@ -1,4 +1,4 @@
-import { useColorScheme, vars } from "nativewind";
+import { colorScheme, vars } from "nativewind";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -53,14 +53,12 @@ export function ThemeProvider(props: PropsWithChildren) {
 	const [theme, setThemeState] = useState<Theme>("light");
 	const [isLoading, setIsLoading] = useState(true);
 
-	const { setColorScheme } = useColorScheme();
-
 	useEffect(() => {
 		async function loadTheme() {
 			try {
 				const savedTheme = await getTheme();
 				setThemeState(savedTheme);
-				setColorScheme(savedTheme);
+				colorScheme.set(savedTheme);
 			} catch (error) {
 				console.error("Error loading theme:", error);
 			} finally {
@@ -68,15 +66,15 @@ export function ThemeProvider(props: PropsWithChildren) {
 			}
 		}
 		loadTheme();
-	}, [setColorScheme]);
+	}, []);
 
 	useEffect(
 		function updateColorScheme() {
 			if (theme && !isLoading) {
-				setColorScheme(theme);
+				colorScheme.set(theme);
 			}
 		},
-		[theme, isLoading, setColorScheme],
+		[theme, isLoading],
 	);
 
 	const updateTheme = useCallback(async (newTheme: Theme) => {
@@ -102,31 +100,31 @@ export function ThemeProvider(props: PropsWithChildren) {
 		[theme, toggleTheme, updateTheme],
 	);
 
-	if (isLoading) {
-		return (
-			<>
-				<StatusBar
-					barStyle="dark-content"
-					backgroundColor="transparent"
-					translucent
-				/>
-				<View style={[{ flex: 1 }, lightTheme]} className="bg-background">
-					{children}
-				</View>
-			</>
-		);
-	}
+	const loadingValue: ThemeContextType = useMemo(
+		() => ({
+			theme: "light",
+			toggleTheme: async () => {},
+			setTheme: async () => {},
+		}),
+		[],
+	);
+
+	const themeVars = isLoading
+		? lightTheme
+		: theme === "dark"
+			? darkTheme
+			: lightTheme;
 
 	return (
-		<ThemeContext.Provider value={memoizedValue}>
+		<ThemeContext.Provider value={isLoading ? loadingValue : memoizedValue}>
 			<StatusBar
-				barStyle={theme === "dark" ? "light-content" : "dark-content"}
+				barStyle={
+					!isLoading && theme === "dark" ? "light-content" : "dark-content"
+				}
 				backgroundColor="transparent"
 				translucent
 			/>
-			<View style={[{ flex: 1 }, theme === "dark" ? darkTheme : lightTheme]}>
-				{children}
-			</View>
+			<View style={[{ flex: 1 }, themeVars]}>{children}</View>
 		</ThemeContext.Provider>
 	);
 }

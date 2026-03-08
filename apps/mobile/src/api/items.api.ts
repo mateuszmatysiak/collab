@@ -124,6 +124,91 @@ export const useDeleteItem = (listId: string, itemId: string) => {
 	});
 };
 
+export const useResetAllItems = (listId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient.put(`/api/lists/${listId}/items/reset`).then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) =>
+					oldItems.map((item) => ({ ...item, isCompleted: false })),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+		},
+	});
+};
+
+export const useDeleteCompletedItems = (listId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient
+				.delete(`/api/lists/${listId}/items/completed`)
+				.then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) => oldItems.filter((item) => !item.isCompleted),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+		},
+	});
+};
+
 export const useReorderItems = (listId: string) => {
 	const queryClient = useQueryClient();
 

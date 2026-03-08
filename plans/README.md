@@ -88,6 +88,68 @@ Data ustalenia: 2026-03-07
 
 **Rozwiązanie:** Dodano `Keyboard.dismiss()` w `useEffect` wewnątrz `DialogContent` — przy każdym otwarciu dialogu klawiatura jest chowana. Dialogi z własnymi inputami (np. `CategorySelectDialog` w trybie tworzenia) mają `autoFocus` na swoich polach, więc focus przenosi się automatycznie.
 
+### 2026-03-08: Grupa 5 — Funkcjonalności listy (MAT-74, MAT-75, MAT-73, MAT-64, MAT-76, MAT-82, MAT-83, MAT-72, MAT-84, MAT-85)
+
+#### MAT-74: Odznaczanie filtra po kliknięciu — DONE
+
+**Pliki:** `apps/mobile/src/components/lists/list-page/ItemFilters.tsx`, `apps/mobile/src/components/lists/list-page/CategoryFilters.tsx`
+
+**Rozwiązanie:** Dodano toggle logic — kliknięcie aktywnego filtra statusu (innego niż "Wszystkie") przełącza z powrotem na "Wszystkie". Kliknięcie aktywnej kategorii odznacza ją (wraca do null = "Wszystkie kategorie"). Dotyczy też filtra "Pozostałe kategorie" (uncategorized).
+
+#### MAT-75: Auto-kategoria z filtra — DONE
+
+**Pliki:** `apps/mobile/app/(tabs)/lists/[id].tsx`, `apps/mobile/src/components/lists/list-page/CategoryFilters.tsx`, `apps/mobile/src/components/lists/list-page/ListItemsContent.tsx`, `apps/mobile/src/components/lists/list-page/AddItemCard.tsx`
+
+**Rozwiązanie:** `CategoryFilters` przekazuje `categoryType` w callbacku `onCategoryChange`. Stan `selectedCategoryType` śledzony w `[id].tsx`, przekazywany przez `ListItemsContent` do `AddItemCard`. W `AddItemCard` dodano `useEffect` reagujący na zmiany filtra kategorii — automatycznie ustawia `categoryId` i `categoryType` na wartości z filtra (pomija `UNCATEGORIZED_FILTER`). Po dodaniu elementu użytkownik może zmienić kategorię przez edycję.
+
+#### MAT-73: Wyszukiwanie elementów listy — DONE
+
+**Pliki:** `apps/mobile/app/(tabs)/lists/[id].tsx`, `apps/mobile/src/components/lists/list-page/ListHeader.tsx`, `apps/mobile/src/components/lists/list-page/ListItemsContent.tsx`
+
+**Rozwiązanie:** Dodano ikonę lupy w `ListHeader` (toggle). Po kliknięciu pojawia się `TextInput` z search bar pod headerem. Wyszukiwanie debounced 300ms przez `useDebounce`. Filtrowanie client-side po `item.title.toLowerCase().includes(query)`. Ikona X do czyszczenia zapytania. Pusty wynik: "Brak wyników dla [query]". Filtrowanie łączy się z istniejącymi filtrami (status + kategoria).
+
+#### MAT-64: Sekcja zaznaczonych (Google Keep) — DONE
+
+**Plik:** `apps/mobile/src/components/lists/list-page/ListItemsContent.tsx`
+
+**Rozwiązanie:** Gdy filtr statusu = "all", elementy rozdzielane na `pendingItems` i `completedItems`. DragList renderuje tylko pending items (z drag-and-drop). W `ListFooterComponent` dodano zwijaną sekcję "Ukończone (X)" z ikoną ChevronRight/ChevronDown. Domyślnie zwinięta (`isCompletedExpanded = false`). Kliknięcie checkboxa w sekcji completed odznacza element — wraca do pending na pozycję wg `position`. Gdy filtr = "completed" lub "incomplete", renderuje płasko (bez sekcji).
+
+#### MAT-76: Licznik elementów "X/Y" — DONE
+
+**Plik:** `apps/mobile/src/components/lists/lists-page/ListCard.tsx`
+
+**Rozwiązanie:** Zmieniono wyświetlanie z "{itemsCount} elementów" na "{completedCount}/{itemsCount}". Dane `completedCount` i `itemsCount` już dostępne w `ListWithDetails` z API.
+
+#### MAT-82: Reset checkboxów — DONE
+
+**Backend:** `apps/backend/src/services/items.service.ts` — nowa funkcja `resetAllItems()` wykonująca batch `UPDATE SET isCompleted = false WHERE listId AND isCompleted = true`. Controller: `resetAllItemsController`. Route: `PUT /:listId/items/reset`.
+
+**Mobile:** `apps/mobile/src/api/items.api.ts` — hook `useResetAllItems` z optimistic update (wszystkie items → `isCompleted: false`). UI: przycisk RotateCcw w sekcji "Ukończone" z `Alert.alert` potwierdzeniem.
+
+#### MAT-83: Masowe usuwanie zaznaczonych — DONE
+
+**Backend:** `apps/backend/src/services/items.service.ts` — nowa funkcja `deleteCompletedItems()` wykonująca batch `DELETE WHERE listId AND isCompleted = true`. Controller: `deleteCompletedItemsController`. Route: `DELETE /:listId/items/completed`.
+
+**Mobile:** `apps/mobile/src/api/items.api.ts` — hook `useDeleteCompletedItems` z optimistic update (usunięcie completed z cache). UI: przycisk Trash2 w sekcji "Ukończone" z `Alert.alert` potwierdzeniem, zamykający sekcję po usunięciu.
+
+#### MAT-72: Animacje zaznaczenia — DONE
+
+**Plik:** `apps/mobile/src/components/lists/list-page/ListItemCard.tsx`
+
+**Rozwiązanie:** Użyto `react-native-reanimated` (już zainstalowane). Dodano `Animated.View` wrapper z `useAnimatedStyle` dla opacity (1 → 0.6 przy zaznaczeniu, animowane `withTiming` 300ms). Checkbox ma animację scale (1 → 1.2 → 1) przy kliknięciu via `useSharedValue` + `withTiming`. Tekst zachowuje istniejący `line-through` z CSS.
+
+#### MAT-84: Redesign filtrów — DONE
+
+**Plik:** `apps/mobile/src/components/lists/list-page/ItemFilters.tsx`
+
+**Rozwiązanie:** Zmieniono layout filtrów statusu z poziomych przycisków na segmented control (iOS-style). Trzy segmenty ("Wszystkie", "Aktywne", "Ukończone") w zaokrąglonym kontenerze z border. Aktywny segment ma białe tło z cieniem. Skrócono etykiety ("Wszystkie statusy" → "Wszystkie", "Nieukończone" → "Aktywne"). Filtry kategorii pozostają jako pills (inny styl wizualny niż status).
+
+#### MAT-85: Więcej ikon kategorii — DONE
+
+**Plik:** `apps/mobile/src/components/categories/IconPicker.tsx`
+
+**Rozwiązanie:** Rozszerzono `POPULAR_ICONS` z 24 do ~100 ikon Lucide, pogrupowanych tematycznie: zakupy/jedzenie (24), dom (12), transport (7), praca/biuro (10), zdrowie/sport (7), rozrywka/hobby (10), ludzie/rodzina (6), natura/ogród (7), inne (17). Dodano search bar (`TextInput` z ikoną lupy) do filtrowania ikon po nazwie. ScrollView z `max-h-48` dla zawartości.
+
 ### 2026-03-08: Grupa 3 — Cleanup (MAT-87)
 
 #### MAT-87: Usunięcie WakeUpScreen — DONE
@@ -142,20 +204,20 @@ Data ustalenia: 2026-03-07
 
 **Uzasadnienie:** Testy (MAT-48) blokują CI (MAT-51) i Husky (MAT-89).
 
-### 5. Funkcjonalności listy
+### 5. Funkcjonalności listy — DONE (2026-03-08)
 
-| # | Zadanie | Priorytet | Plan | Zależności |
-|---|---------|-----------|------|------------|
-| 12 | **MAT-74** — Odznaczanie filtra | Medium | [Plan](./MAT-74-deselect-filter.md) | - |
-| 13 | **MAT-75** — Auto-kategoria z filtra | Medium | [Plan](./MAT-75-auto-category-from-filter.md) | MAT-74 |
-| 14 | **MAT-73** — Wyszukiwanie elementów | Medium | [Plan](./MAT-73-search-list-items.md) | - |
-| 15 | **MAT-64** — Sekcja zaznaczonych (Google Keep) | Low | [Plan](./MAT-64-completed-items-section.md) | - |
-| 16 | **MAT-76** — Licznik elementów "X/Y" | Low | [Plan](./MAT-76-item-count-display.md) | - |
-| 17 | **MAT-82** — Reset checkboxów | Low | [Plan](./MAT-82-reset-checkboxes.md) | - |
-| 18 | **MAT-83** — Masowe usuwanie zaznaczonych | Low | [Plan](./MAT-83-delete-all-completed.md) | MAT-64 |
-| 19 | **MAT-72** — Animacje zaznaczenia | Low | [Plan](./MAT-72-checkbox-animations.md) | MAT-64 |
-| 20 | **MAT-84** — Redesign filtrów | Low | [Plan](./MAT-84-filter-redesign.md) | MAT-74, MAT-75 |
-| 21 | **MAT-85** — Więcej ikon kategorii | Low | [Plan](./MAT-85-more-category-icons.md) | - |
+| # | Zadanie | Priorytet | Status | Plan |
+|---|---------|-----------|--------|------|
+| 12 | **MAT-74** — Odznaczanie filtra | Medium | DONE | [Plan](./MAT-74-deselect-filter.md) |
+| 13 | **MAT-75** — Auto-kategoria z filtra | Medium | DONE | [Plan](./MAT-75-auto-category-from-filter.md) |
+| 14 | **MAT-73** — Wyszukiwanie elementów | Medium | DONE | [Plan](./MAT-73-search-list-items.md) |
+| 15 | **MAT-64** — Sekcja zaznaczonych (Google Keep) | Low | DONE | [Plan](./MAT-64-completed-items-section.md) |
+| 16 | **MAT-76** — Licznik elementów "X/Y" | Low | DONE | [Plan](./MAT-76-item-count-display.md) |
+| 17 | **MAT-82** — Reset checkboxów | Low | DONE | [Plan](./MAT-82-reset-checkboxes.md) |
+| 18 | **MAT-83** — Masowe usuwanie zaznaczonych | Low | DONE | [Plan](./MAT-83-delete-all-completed.md) |
+| 19 | **MAT-72** — Animacje zaznaczenia | Low | DONE | [Plan](./MAT-72-checkbox-animations.md) |
+| 20 | **MAT-84** — Redesign filtrów | Low | DONE | [Plan](./MAT-84-filter-redesign.md) |
+| 21 | **MAT-85** — Więcej ikon kategorii | Low | DONE | [Plan](./MAT-85-more-category-icons.md) |
 
 **Uzasadnienie:** MAT-74 blokuje MAT-75. MAT-64 blokuje MAT-83 i MAT-72. MAT-84 lepiej po MAT-74/75.
 

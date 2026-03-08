@@ -1,6 +1,6 @@
 import type { ListWithDetails } from "@collab-list/shared/types";
 import { router } from "expo-router";
-import { ArrowLeft, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Search, Trash2 } from "lucide-react-native";
 import { useCallback, useRef, useState } from "react";
 import {
 	Alert,
@@ -106,10 +106,12 @@ function EditableListName(props: EditableListNameProps) {
 
 interface ListHeaderProps {
 	list: ListWithDetails;
+	onToggleSearch?: () => void;
+	isSearchVisible?: boolean;
 }
 
 export function ListHeader(props: ListHeaderProps) {
-	const { list } = props;
+	const { list, onToggleSearch, isSearchVisible } = props;
 
 	const isOwner = useIsListOwner(list);
 	const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -170,6 +172,23 @@ export function ListHeader(props: ListHeaderProps) {
 					onSave={handleSaveName}
 					isUpdating={isUpdating}
 				/>
+
+				{onToggleSearch && (
+					<Pressable
+						onPress={onToggleSearch}
+						className={cn(
+							"size-10 items-center justify-center rounded-full active:bg-accent",
+							isSearchVisible && "bg-primary/10",
+						)}
+						hitSlop={8}
+					>
+						<Icon
+							as={Search}
+							className={isSearchVisible ? "text-primary" : "text-foreground"}
+							size={20}
+						/>
+					</Pressable>
+				)}
 
 				{isOwner && (
 					<Pressable
