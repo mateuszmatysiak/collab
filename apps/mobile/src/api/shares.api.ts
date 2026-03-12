@@ -62,7 +62,20 @@ export const useRemoveShare = (listId: string, userId: string) => {
 			apiClient
 				.delete(`/api/lists/${listId}/share/${userId}`)
 				.then((res) => res.data),
-		onSuccess: () => {
+		onMutate: async () => {
+			await queryClient.cancelQueries({ queryKey: queryKeys.lists.all });
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.shares(listId),
+			});
+
+			const previousLists = queryClient.getQueryData<ListWithDetails[]>(
+				queryKeys.lists.all,
+			);
+			const previousShares = queryClient.getQueryData<{
+				shares: ShareWithUser[];
+				author: SharesAuthor;
+			}>(queryKeys.lists.shares(listId));
+
 			queryClient.setQueryData<ListWithDetails[]>(queryKeys.lists.all, (old) =>
 				old?.map((list) =>
 					list.id === listId
@@ -75,6 +88,30 @@ export const useRemoveShare = (listId: string, userId: string) => {
 				),
 			);
 
+			if (previousShares) {
+				queryClient.setQueryData(queryKeys.lists.shares(listId), {
+					...previousShares,
+					shares: previousShares.shares.filter(
+						(share) => share.userId !== userId,
+					),
+				});
+			}
+
+			return { previousLists, previousShares };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousLists) {
+				queryClient.setQueryData(queryKeys.lists.all, context.previousLists);
+			}
+			if (context?.previousShares) {
+				queryClient.setQueryData(
+					queryKeys.lists.shares(listId),
+					context.previousShares,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({ queryKey: queryKeys.lists.all });
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.shares(listId),
 			});

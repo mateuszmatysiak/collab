@@ -1,4 +1,7 @@
 export const queryKeys = {
+	auth: {
+		me: ["auth", "me"] as const,
+	},
 	lists: {
 		all: ["lists"] as const,
 		detail: (id: string) => ["lists", id] as const,
@@ -7,6 +10,7 @@ export const queryKeys = {
 	},
 	categories: {
 		user: ["categories", "user"] as const,
+		listAll: ["categories", "list"] as const,
 		list: (listId: string) => ["categories", "list", listId] as const,
 	},
 };

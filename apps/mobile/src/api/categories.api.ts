@@ -39,12 +39,35 @@ export const useUpdateUserCategory = (id: string) => {
 	return useMutation({
 		mutationFn: (data: UpdateCategoryRequest) =>
 			apiClient.patch(`/api/categories/${id}`, data).then((res) => res.data),
-		onSuccess: (_data, variables) => {
+		onMutate: async (variables) => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.categories.user,
+			});
+
+			const previousCategories = queryClient.getQueryData<Category[]>(
+				queryKeys.categories.user,
+			);
+
 			queryClient.setQueryData<Category[]>(queryKeys.categories.user, (old) =>
 				old?.map((cat) => (cat.id === id ? { ...cat, ...variables } : cat)),
 			);
-			queryClient.invalidateQueries({ queryKey: ["lists"] });
-			queryClient.invalidateQueries({ queryKey: ["categories", "list"] });
+
+			return { previousCategories };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousCategories) {
+				queryClient.setQueryData(
+					queryKeys.categories.user,
+					context.previousCategories,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.categories.user,
+			});
+			queryClient.invalidateQueries({ queryKey: queryKeys.lists.all });
+			queryClient.invalidateQueries({ queryKey: queryKeys.categories.listAll });
 		},
 	});
 };
@@ -55,12 +78,35 @@ export const useDeleteUserCategory = (id: string) => {
 	return useMutation({
 		mutationFn: () =>
 			apiClient.delete(`/api/categories/${id}`).then((res) => res.data),
-		onSuccess: () => {
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.categories.user,
+			});
+
+			const previousCategories = queryClient.getQueryData<Category[]>(
+				queryKeys.categories.user,
+			);
+
 			queryClient.setQueryData<Category[]>(queryKeys.categories.user, (old) =>
 				old?.filter((cat) => cat.id !== id),
 			);
-			queryClient.invalidateQueries({ queryKey: ["lists"] });
-			queryClient.invalidateQueries({ queryKey: ["categories", "list"] });
+
+			return { previousCategories };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousCategories) {
+				queryClient.setQueryData(
+					queryKeys.categories.user,
+					context.previousCategories,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.categories.user,
+			});
+			queryClient.invalidateQueries({ queryKey: queryKeys.lists.all });
+			queryClient.invalidateQueries({ queryKey: queryKeys.categories.listAll });
 		},
 	});
 };
@@ -152,7 +198,7 @@ export const useDeleteLocalCategory = (listId: string) => {
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.categories.list(listId),
 			});
-			queryClient.invalidateQueries({ queryKey: ["lists"] });
+			queryClient.invalidateQueries({ queryKey: queryKeys.lists.all });
 		},
 	});
 };

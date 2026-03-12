@@ -8,13 +8,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { queryKeys } from "./queryKeys";
 
+export function fetchItems(listId: string) {
+	return apiClient
+		.get<{ items: ListItem[] }>(`/api/lists/${listId}/items`)
+		.then((res) => res.data.items);
+}
+
 export const useItems = (listId: string) => {
 	return useQuery<ListItem[]>({
 		queryKey: queryKeys.lists.items(listId),
-		queryFn: () =>
-			apiClient
-				.get<{ items: ListItem[] }>(`/api/lists/${listId}/items`)
-				.then((res) => res.data.items),
+		queryFn: () => fetchItems(listId),
+		placeholderData: [],
 	});
 };
 
@@ -31,8 +35,16 @@ export const useCreateItem = (listId: string) => {
 				queryKeys.lists.items(listId),
 				(oldItems = []) => [...oldItems, newItem],
 			);
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
 			});
 		},
 	});
@@ -55,11 +67,17 @@ export const useUpdateItem = (listId: string, itemId: string) => {
 				queryKeys.lists.items(listId),
 			);
 
+			const { is_completed, ...restData } = data;
+			const optimisticData: Partial<ListItem> = {
+				...restData,
+				...(is_completed !== undefined ? { isCompleted: is_completed } : {}),
+			};
+
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
 				(oldItems = []) =>
 					oldItems.map((item) =>
-						item.id === itemId ? { ...item, ...data } : item,
+						item.id === itemId ? { ...item, ...optimisticData } : item,
 					),
 			);
 
@@ -76,6 +94,12 @@ export const useUpdateItem = (listId: string, itemId: string) => {
 		onSettled: () => {
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
 			});
 		},
 	});
@@ -120,6 +144,9 @@ export const useDeleteItem = (listId: string, itemId: string) => {
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
 			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
+			});
 		},
 	});
 };
@@ -161,6 +188,9 @@ export const useResetAllItems = (listId: string) => {
 			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
 			});
 		},
 	});
@@ -204,6 +234,9 @@ export const useDeleteCompletedItems = (listId: string) => {
 			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
 			});
 		},
 	});
