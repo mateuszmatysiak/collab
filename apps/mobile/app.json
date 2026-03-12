@@ -6,8 +6,7 @@
 		"version": "1.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/icon.png",
-		"userInterfaceStyle": "light",
-		"newArchEnabled": true,
+		"userInterfaceStyle": "automatic",
 		"scheme": "ls",
 		"splash": {
 			"image": "./assets/icon.png",
@@ -24,7 +23,6 @@
 				"foregroundImage": "./assets/adaptive-icon.png",
 				"backgroundColor": "#ff9800"
 			},
-			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false
 		},
 		"plugins": ["expo-router"],
