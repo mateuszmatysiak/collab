@@ -5,7 +5,7 @@ import {
 	RotateCcw,
 	Trash2,
 } from "lucide-react-native";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Alert,
 	type FlatList,
@@ -21,6 +21,15 @@ import {
 	useReorderItems,
 	useResetAllItems,
 } from "@/api/items.api";
+import { Button } from "@/components/ui/Button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
 import { Text } from "@/components/ui/Text";
 import { UNCATEGORIZED_FILTER } from "@/lib/constants";
@@ -88,7 +97,14 @@ export function ListItemsContent(props: ListItemsContentProps) {
 	} = props;
 
 	const listRef = useRef<DragListRef>(null);
-	const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+	const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const hiddenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const contentHeightRef = useRef(0);
+	const layoutHeightRef = useRef(0);
+	const footerHeightRef = useRef(0);
+	const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
+	const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
 	const { mutate: reorderItems } = useReorderItems(listId);
 	const { mutate: resetAllItems, isPending: isResetting } =
@@ -96,21 +112,77 @@ export function ListItemsContent(props: ListItemsContentProps) {
 	const { mutate: deleteCompletedItems, isPending: isDeletingCompleted } =
 		useDeleteCompletedItems(listId);
 
+	const [localItems, setLocalItems] = useState(items);
+	const prevItemsRef = useRef(items);
+	const [hiddenCompletedIds, setHiddenCompletedIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+
+	useEffect(() => {
+		const prevItems = prevItemsRef.current;
+		prevItemsRef.current = items;
+
+		const newlyCompleted: string[] = [];
+		for (const item of items) {
+			const prev = prevItems.find((p) => p.id === item.id);
+			if (prev && !prev.isCompleted && item.isCompleted) {
+				newlyCompleted.push(item.id);
+			}
+		}
+
+		if (newlyCompleted.length > 0) {
+			setHiddenCompletedIds((prev) => {
+				const next = new Set(prev);
+				for (const id of newlyCompleted) next.add(id);
+				return next;
+			});
+
+			if (hiddenTimerRef.current) clearTimeout(hiddenTimerRef.current);
+			hiddenTimerRef.current = setTimeout(() => {
+				setHiddenCompletedIds((prev) => {
+					const next = new Set(prev);
+					for (const id of newlyCompleted) next.delete(id);
+					return next;
+				});
+			}, 100);
+		}
+
+		setLocalItems(items);
+
+		return () => {
+			if (hiddenTimerRef.current) clearTimeout(hiddenTimerRef.current);
+		};
+	}, [items]);
+
 	const scrollToIndex = useCallback((index: number) => {
-		setTimeout(() => {
+		if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+		scrollTimerRef.current = setTimeout(() => {
 			listRef.current?.scrollToIndex({
 				index,
 				animated: true,
 				viewPosition: 0.5,
 			});
-		}, 50);
+		}, 250);
+	}, []);
+
+	const scrollToAddItem = useCallback(() => {
+		if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+		scrollTimerRef.current = setTimeout(() => {
+			const addItemCardTop = contentHeightRef.current - footerHeightRef.current;
+			const offset = addItemCardTop - layoutHeightRef.current + 200;
+			if (offset > 0) {
+				listRef.current?.scrollToOffset({ offset, animated: true });
+			} else {
+				listRef.current?.scrollToEnd({ animated: true });
+			}
+		}, 250);
 	}, []);
 
 	const filteredItems = useMemo(() => {
-		const byStatus = filterByStatus(items, filter);
+		const byStatus = filterByStatus(localItems, filter);
 		const byCategory = filterByCategory(byStatus, categoryId);
 		return filterBySearch(byCategory, searchQuery);
-	}, [items, filter, categoryId, searchQuery]);
+	}, [localItems, filter, categoryId, searchQuery]);
 
 	const pendingItems = useMemo(
 		() => sortByPosition(filteredItems.filter((item) => !item.isCompleted)),
@@ -133,19 +205,29 @@ export function ListItemsContent(props: ListItemsContentProps) {
 			const targetItem = displayItems[toIndex];
 			if (!movedItem || !targetItem) return;
 
-			const fullFromIndex = items.findIndex((item) => item.id === movedItem.id);
-			const fullToIndex = items.findIndex((item) => item.id === targetItem.id);
+			const fullFromIndex = localItems.findIndex(
+				(item) => item.id === movedItem.id,
+			);
+			const fullToIndex = localItems.findIndex(
+				(item) => item.id === targetItem.id,
+			);
 			if (fullFromIndex === -1 || fullToIndex === -1) return;
 
-			const newOrder = [...items];
+			const newOrder = [...localItems];
 			const [removed] = newOrder.splice(fullFromIndex, 1);
 			if (!removed) return;
 			newOrder.splice(fullToIndex, 0, removed);
 
+			const reorderedItems = newOrder.map((item, index) => ({
+				...item,
+				position: index,
+			}));
+			setLocalItems(reorderedItems);
+
 			const itemIds = newOrder.map((item) => item.id);
 			reorderItems({ itemIds });
 		},
-		[items, displayItems, reorderItems],
+		[localItems, displayItems, reorderItems],
 	);
 
 	const renderItem = useCallback(
@@ -153,69 +235,53 @@ export function ListItemsContent(props: ListItemsContentProps) {
 			const { item, index, onDragStart, onDragEnd, isActive } = info;
 
 			return (
-				<View className="mb-3">
-					<ListItemCard
-						item={item}
-						listId={listId}
-						isActive={isActive}
-						onDragStart={onDragStart}
-						onDragEnd={onDragEnd}
-						onInputFocus={() => scrollToIndex(index)}
-					/>
-				</View>
+				<ListItemCard
+					item={item}
+					listId={listId}
+					isActive={isActive}
+					onDragStart={onDragStart}
+					onDragEnd={onDragEnd}
+					onInputFocus={() => scrollToIndex(index)}
+				/>
 			);
 		},
 		[listId, scrollToIndex],
 	);
 
-	function handleResetAll() {
-		Alert.alert(
-			"Resetuj zaznaczenia",
-			"Czy na pewno chcesz odznaczyć wszystkie elementy?",
-			[
-				{ text: "Anuluj", style: "cancel" },
-				{
-					text: "Resetuj",
-					onPress: () => {
-						resetAllItems(undefined, {
-							onError: () => {
-								Alert.alert("Błąd", "Nie udało się zresetować elementów.");
-							},
-						});
-					},
-				},
-			],
-		);
+	function handleResetAllConfirm() {
+		resetAllItems(undefined, {
+			onSuccess: () => {
+				setIsResetDialogOpen(false);
+			},
+			onError: () => {
+				Alert.alert("Błąd", "Nie udało się zresetować elementów.");
+			},
+		});
 	}
 
-	function handleDeleteCompleted() {
-		Alert.alert(
-			"Usuń zaznaczone",
-			`Czy na pewno chcesz usunąć ${completedItems.length} zaznaczonych elementów?`,
-			[
-				{ text: "Anuluj", style: "cancel" },
-				{
-					text: "Usuń",
-					style: "destructive",
-					onPress: () => {
-						deleteCompletedItems(undefined, {
-							onSuccess: () => {
-								setIsCompletedExpanded(false);
-							},
-							onError: () => {
-								Alert.alert("Błąd", "Nie udało się usunąć elementów.");
-							},
-						});
-					},
-				},
-			],
-		);
+	function handleDeleteCompletedConfirm() {
+		deleteCompletedItems(undefined, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false);
+				setIsCompletedExpanded(false);
+			},
+			onError: () => {
+				Alert.alert("Błąd", "Nie udało się usunąć elementów.");
+			},
+		});
 	}
 
 	const footerContent = (
-		<View>
+		<View onLayout={(e) => { footerHeightRef.current = e.nativeEvent.layout.height; }}>
+			<AddItemCard
+				listId={listId}
+				filterCategoryId={filterCategoryId}
+				filterCategoryType={filterCategoryType}
+				onInputFocus={scrollToAddItem}
+			/>
+
 			{showSections && completedItems.length > 0 && (
-				<View className="mt-2">
+				<View className="mt-4 rounded-2xl border border-border bg-card px-3">
 					<Pressable
 						onPress={() => setIsCompletedExpanded((prev) => !prev)}
 						className="flex-row items-center gap-2 py-3"
@@ -231,7 +297,7 @@ export function ListItemsContent(props: ListItemsContentProps) {
 
 						<View className="ml-auto flex-row gap-1">
 							<Pressable
-								onPress={handleResetAll}
+								onPress={() => setIsResetDialogOpen(true)}
 								disabled={isResetting}
 								className="size-8 items-center justify-center rounded-full active:bg-accent"
 								hitSlop={4}
@@ -244,7 +310,7 @@ export function ListItemsContent(props: ListItemsContentProps) {
 							</Pressable>
 
 							<Pressable
-								onPress={handleDeleteCompleted}
+								onPress={() => setIsDeleteDialogOpen(true)}
 								disabled={isDeletingCompleted}
 								className="size-8 items-center justify-center rounded-full active:bg-destructive/10"
 								hitSlop={4}
@@ -255,51 +321,101 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					</Pressable>
 
 					{isCompletedExpanded &&
-						completedItems.map((item) => (
-							<View key={item.id} className="mb-3">
-								<ListItemCard item={item} listId={listId} />
-							</View>
-						))}
+						completedItems
+							.filter((item) => !hiddenCompletedIds.has(item.id))
+							.map((item) => (
+								<ListItemCard key={item.id} item={item} listId={listId} />
+							))}
 				</View>
 			)}
-
-			<AddItemCard
-				listId={listId}
-				filterCategoryId={filterCategoryId}
-				filterCategoryType={filterCategoryType}
-			/>
 		</View>
 	);
 
 	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			style={{ flex: 1 }}
-			keyboardVerticalOffset={Platform.OS === "ios" ? 120 : 0}
-		>
-			<DragList
-				ref={listRef}
-				data={displayItems}
-				keyExtractor={(item) => item.id}
-				renderItem={renderItem}
-				onReordered={handleReordered}
-				contentContainerClassName="px-4 pb-5"
-				showsVerticalScrollIndicator={false}
-				keyboardShouldPersistTaps="handled"
-				refreshControl={
-					<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
-				}
-				ListEmptyComponent={
-					searchQuery ? (
-						<View className="items-center py-8">
-							<Text className="text-muted-foreground">
-								Brak wyników dla "{searchQuery}"
-							</Text>
-						</View>
-					) : undefined
-				}
-				ListFooterComponent={footerContent}
-			/>
-		</KeyboardAvoidingView>
+		<>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				style={{ flex: 1 }}
+				keyboardVerticalOffset={Platform.OS === "ios" ? 160 : 0}
+			>
+				<DragList
+					ref={listRef}
+					data={displayItems}
+					extraData={localItems}
+					keyExtractor={(item) => item.id}
+					renderItem={renderItem}
+					onReordered={handleReordered}
+					onContentSizeChange={(_w, h) => { contentHeightRef.current = h; }}
+					onLayout={(e) => { layoutHeightRef.current = e.nativeEvent.layout.height; }}
+					contentContainerClassName="px-5 pb-28"
+					showsVerticalScrollIndicator={false}
+					keyboardShouldPersistTaps="handled"
+					refreshControl={
+						<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
+					}
+					ListEmptyComponent={
+						searchQuery ? (
+							<View className="items-center py-8">
+								<Text className="text-muted-foreground">
+									Brak wyników dla "{searchQuery}"
+								</Text>
+							</View>
+						) : undefined
+					}
+					ListFooterComponent={footerContent}
+				/>
+			</KeyboardAvoidingView>
+
+			<Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+				<DialogContent variant="centered">
+					<DialogHeader>
+						<DialogTitle>Resetuj zaznaczenia</DialogTitle>
+						<DialogDescription>
+							Czy na pewno chcesz odznaczyć wszystkie elementy?
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onPress={() => setIsResetDialogOpen(false)}
+							disabled={isResetting}
+						>
+							<Text>Anuluj</Text>
+						</Button>
+						<Button onPress={handleResetAllConfirm} disabled={isResetting}>
+							<Text>{isResetting ? "Resetowanie..." : "Resetuj"}</Text>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+				<DialogContent variant="centered">
+					<DialogHeader>
+						<DialogTitle>Usuń zaznaczone</DialogTitle>
+						<DialogDescription>
+							Czy na pewno chcesz usunąć {completedItems.length} zaznaczonych
+							elementów?
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onPress={() => setIsDeleteDialogOpen(false)}
+							disabled={isDeletingCompleted}
+						>
+							<Text>Anuluj</Text>
+						</Button>
+						<Button
+							variant="destructive"
+							onPress={handleDeleteCompletedConfirm}
+							disabled={isDeletingCompleted}
+						>
+							<Text>{isDeletingCompleted ? "Usuwanie..." : "Usuń"}</Text>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }

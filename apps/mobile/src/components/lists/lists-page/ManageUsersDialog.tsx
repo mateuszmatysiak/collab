@@ -77,12 +77,6 @@ export function ManageUsersDialog(props: ManageUsersDialogProps) {
 		);
 	}
 
-	function handleClose() {
-		setLogin("");
-		setLoginError("");
-		onOpenChange(false);
-	}
-
 	function handleChangeLogin(text: string) {
 		setLogin(text);
 		if (loginError) setLoginError("");
@@ -141,12 +135,6 @@ export function ManageUsersDialog(props: ManageUsersDialogProps) {
 						) : null}
 					</View>
 				)}
-
-				<DialogFooter>
-					<Button variant="outline" onPress={handleClose}>
-						<Text>Zamknij</Text>
-					</Button>
-				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);
@@ -228,7 +216,7 @@ function ShareItem(props: ShareItemProps) {
 				)}
 			</View>
 			<Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-				<DialogContent>
+				<DialogContent variant="centered">
 					<DialogHeader>
 						<DialogTitle>Usuń użytkownika</DialogTitle>
 						<DialogDescription>

@@ -1,6 +1,6 @@
 import type { CategoryType } from "@collab-list/shared/types";
 import { Ban, GripVertical, Plus } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, type TextInput, View } from "react-native";
 import { useListCategories } from "@/api/categories.api";
 import { useCreateItem } from "@/api/items.api";
@@ -17,10 +17,16 @@ interface AddItemCardProps {
 	listId: string;
 	filterCategoryId?: string | null;
 	filterCategoryType?: CategoryType | null;
+	onInputFocus?: () => void;
 }
 
 export function AddItemCard(props: AddItemCardProps) {
-	const { listId, filterCategoryId = null, filterCategoryType = null } = props;
+	const {
+		listId,
+		filterCategoryId = null,
+		filterCategoryType = null,
+		onInputFocus,
+	} = props;
 
 	const titleInputRef = useRef<TextInput>(null);
 	const descriptionInputRef = useRef<TextInput>(null);
@@ -28,26 +34,26 @@ export function AddItemCard(props: AddItemCardProps) {
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
-	const [categoryId, setCategoryId] = useState<string | null>(null);
-	const [categoryType, setCategoryType] = useState<CategoryType | null>(null);
+	const [_categoryId, setCategoryId] = useState<string | null | undefined>(
+		undefined,
+	);
+	const [_categoryType, setCategoryType] = useState<
+		CategoryType | null | undefined
+	>(undefined);
 	const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
 
 	const { mutate: createItem, isPending } = useCreateItem(listId);
 	const { data: categories = [] } = useListCategories(listId);
 
-	useEffect(() => {
-		if (
-			filterCategoryId &&
-			filterCategoryId !== UNCATEGORIZED_FILTER &&
-			filterCategoryType
-		) {
-			setCategoryId(filterCategoryId);
-			setCategoryType(filterCategoryType);
-		} else {
-			setCategoryId(null);
-			setCategoryType(null);
-		}
-	}, [filterCategoryId, filterCategoryType]);
+	const hasFilterCategory =
+		filterCategoryId &&
+		filterCategoryId !== UNCATEGORIZED_FILTER &&
+		filterCategoryType;
+
+	const categoryId =
+		_categoryId ?? (hasFilterCategory ? filterCategoryId : null);
+	const categoryType =
+		_categoryType ?? (hasFilterCategory ? filterCategoryType : null);
 
 	const selectedCategory = useMemo(() => {
 		if (!categoryId) return null;
@@ -61,8 +67,8 @@ export function AddItemCard(props: AddItemCardProps) {
 	const resetForm = useCallback(() => {
 		setTitle("");
 		setDescription("");
-		setCategoryId(null);
-		setCategoryType(null);
+		setCategoryId(undefined);
+		setCategoryType(undefined);
 	}, []);
 
 	const handleCreate = useCallback(() => {
@@ -86,6 +92,7 @@ export function AddItemCard(props: AddItemCardProps) {
 					isCreatingRef.current = false;
 					setTimeout(() => {
 						titleInputRef.current?.focus();
+						onInputFocus?.();
 					}, 50);
 				},
 				onError: () => {
@@ -105,6 +112,7 @@ export function AddItemCard(props: AddItemCardProps) {
 		categoryId,
 		categoryType,
 		resetForm,
+		onInputFocus,
 	]);
 
 	const handleTitleSubmit = useCallback(() => {
@@ -122,29 +130,32 @@ export function AddItemCard(props: AddItemCardProps) {
 	const canSubmit = title.trim().length > 0 && !isPending;
 
 	return (
-		<Card className="flex-row items-center gap-3 px-4 py-3">
-			<View className="size-8 items-center justify-center">
+		<Card
+			className={cn(
+				"flex-row items-start gap-3 rounded-2xl border border-dashed border-primary/20 bg-primary/5 px-4 py-3",
+			)}
+		>
+			<Pressable className="mt-0.5 size-8 items-center justify-center" disabled>
 				<Icon
 					as={GripVertical}
 					className="text-muted-foreground/30"
 					size={18}
 				/>
-			</View>
+			</Pressable>
 
-			<Checkbox checked={false} onCheckedChange={() => {}} disabled />
+			<View className="mt-1.5 opacity-30">
+				<Checkbox checked={false} onCheckedChange={() => {}} disabled />
+			</View>
 
 			<Pressable
 				onPress={() => setIsCategoryDialogOpen(true)}
-				className={cn(
-					"size-8 items-center justify-center rounded-full",
-					CategoryIconComponent ? "bg-primary/10" : "bg-muted",
-				)}
+				className="mt-0.5 size-8 items-center justify-center rounded-full bg-muted"
 				hitSlop={4}
 			>
 				<Icon
 					as={CategoryIconComponent ?? Ban}
 					className={
-						CategoryIconComponent ? "text-primary" : "text-muted-foreground"
+						CategoryIconComponent ? "text-foreground" : "text-muted-foreground"
 					}
 					size={16}
 				/>
@@ -156,10 +167,12 @@ export function AddItemCard(props: AddItemCardProps) {
 					value={title}
 					onChangeText={setTitle}
 					onSubmitEditing={handleTitleSubmit}
+					onFocus={onInputFocus}
+					onPressIn={onInputFocus}
 					placeholder="Tytuł elementu..."
 					editable={!isPending}
 					returnKeyType="next"
-					className="h-auto min-h-0 border-0 bg-transparent dark:bg-transparent p-0 py-0 shadow-none text-base font-medium text-foreground"
+					className="h-auto min-h-0 border-0 bg-transparent dark:bg-transparent p-0 py-1 shadow-none text-base font-medium text-foreground"
 				/>
 
 				<Input
@@ -167,10 +180,12 @@ export function AddItemCard(props: AddItemCardProps) {
 					value={description}
 					onChangeText={setDescription}
 					onSubmitEditing={handleCreate}
+					onFocus={onInputFocus}
+					onPressIn={onInputFocus}
 					placeholder="Dodatkowy opis..."
 					editable={!isPending}
 					returnKeyType="done"
-					className="h-auto min-h-0 border-0 bg-transparent dark:bg-transparent p-0 py-0 shadow-none text-sm text-muted-foreground"
+					className="h-auto min-h-0 border-0 bg-transparent dark:bg-transparent p-0 py-1 shadow-none text-sm text-muted-foreground"
 					textAlignVertical="top"
 				/>
 			</View>
@@ -178,7 +193,7 @@ export function AddItemCard(props: AddItemCardProps) {
 			<Pressable
 				onPress={handleCreate}
 				disabled={!canSubmit}
-				className="size-8 items-center justify-center rounded-full active:bg-primary/20"
+				className="mt-0.5 size-8 items-center justify-center rounded-full active:bg-primary/20"
 				hitSlop={8}
 			>
 				<Icon

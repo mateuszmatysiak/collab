@@ -1,5 +1,5 @@
 import type { ListWithDetails } from "@collab-list/shared/types";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -21,12 +21,13 @@ interface ListsContentProps {
 
 const styles = StyleSheet.create({
 	listContent: {
-		paddingHorizontal: 16,
+		paddingHorizontal: 20,
+		paddingBottom: 100,
 	},
 });
 
 function SeparatorItem() {
-	return <View className="h-3" />;
+	return <View className="h-3.5" />;
 }
 
 function ListCardRender(props: { item: ListWithDetails }) {
@@ -51,7 +52,8 @@ function EmptyList() {
 export function ListsContent(props: ListsContentProps) {
 	const { filter = "all" } = props;
 
-	const { data: lists, isLoading, isError, isRefetching, refetch } = useLists();
+	const { data: lists, isLoading, isError, refetch } = useLists();
+	const [isManualRefresh, setIsManualRefresh] = useState(false);
 
 	const filteredLists = useMemo(() => {
 		if (!lists) return [];
@@ -68,8 +70,10 @@ export function ListsContent(props: ListsContentProps) {
 		}
 	}, [lists, filter]);
 
-	const handleRefresh = useCallback(() => {
-		refetch();
+	const handleRefresh = useCallback(async () => {
+		setIsManualRefresh(true);
+		await refetch();
+		setIsManualRefresh(false);
 	}, [refetch]);
 
 	if (isLoading) {
@@ -108,7 +112,10 @@ export function ListsContent(props: ListsContentProps) {
 			contentContainerStyle={styles.listContent}
 			showsVerticalScrollIndicator={false}
 			refreshControl={
-				<RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} />
+				<RefreshControl
+					refreshing={isManualRefresh}
+					onRefresh={handleRefresh}
+				/>
 			}
 		/>
 	);

@@ -1,11 +1,10 @@
 import type { ListWithDetails } from "@collab-list/shared/types";
-import { Eye, Plus } from "lucide-react-native";
+import { Users } from "lucide-react-native";
 import { useState } from "react";
 import { type GestureResponderEvent, Pressable, View } from "react-native";
 import { UserAvatar } from "@/components/lists/shared/UserAvatar";
-import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
-import { useIsListOwner } from "@/hooks/useIsListOwner";
+import { Text } from "@/components/ui/Text";
 import { cn } from "@/lib/utils";
 import { ManageUsersDialog } from "./ManageUsersDialog";
 
@@ -20,8 +19,8 @@ export function ManageUsers(props: ManageUsersProps) {
 
 	const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
 
-	const isOwner = useIsListOwner(list);
 	const visibleShares = list.shares.slice(0, MAX_VISIBLE_AVATARS);
+	const remainingCount = Math.max(0, list.shares.length - MAX_VISIBLE_AVATARS);
 	const hasShares = list.shares.length > 0;
 
 	function handleManageUsers(e: GestureResponderEvent) {
@@ -31,35 +30,35 @@ export function ManageUsers(props: ManageUsersProps) {
 
 	return (
 		<>
-			<View className="flex-row items-center">
-				{visibleShares.map((share, index) => (
-					<View
-						key={share.userId}
-						className={cn(index === 0 ? "ml-0" : "-ml-3")}
-					>
-						<UserAvatar
-							name={share.userName}
-							className="border-2 border-background"
-						/>
+			<View className="flex-row items-center gap-2">
+				{hasShares && (
+					<View className="flex-row items-center">
+						{visibleShares.map((share, index) => (
+							<View
+								key={share.userId}
+								className={cn(index === 0 ? "ml-0" : "-ml-3")}
+							>
+								<UserAvatar
+									name={share.userName}
+									className="border-2 border-card"
+								/>
+							</View>
+						))}
+						{remainingCount > 0 && (
+							<View className="-ml-3 size-8 items-center justify-center rounded-full border-2 border-card bg-primary/15">
+								<Text className="text-xs font-medium text-primary">
+									+{remainingCount}
+								</Text>
+							</View>
+						)}
 					</View>
-				))}
+				)}
 				<Pressable
 					onPress={handleManageUsers}
-					className={cn(hasShares ? "-ml-3" : "ml-0")}
+					className="size-9 items-center justify-center rounded-xl border border-border bg-background active:bg-muted"
 					hitSlop={8}
 				>
-					<Avatar
-						className="size-8 border-2 border-background"
-						alt="Zarządzaj użytkownikami"
-					>
-						<AvatarFallback>
-							<Icon
-								as={isOwner ? Plus : Eye}
-								className="text-muted-foreground"
-								size={14}
-							/>
-						</AvatarFallback>
-					</Avatar>
+					<Icon as={Users} className="text-foreground" size={16} />
 				</Pressable>
 			</View>
 

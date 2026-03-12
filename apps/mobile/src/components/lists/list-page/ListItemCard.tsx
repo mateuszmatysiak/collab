@@ -1,10 +1,12 @@
 import type { CategoryType, ListItem } from "@collab-list/shared/types";
 import { Ban, GripVertical, X } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import Animated, {
 	useAnimatedStyle,
+	useDerivedValue,
 	useSharedValue,
+	withSpring,
 	withTiming,
 } from "react-native-reanimated";
 import { useDeleteItem, useUpdateItem } from "@/api/items.api";
@@ -43,28 +45,33 @@ export function ListItemCard(props: ListItemCardProps) {
 	const { mutate: updateItem } = useUpdateItem(listId, item.id);
 	const { mutate: deleteItem } = useDeleteItem(listId, item.id);
 
-	const opacity = useSharedValue(item.isCompleted ? 0.6 : 1);
-	const scale = useSharedValue(1);
+	const checkboxScale = useSharedValue(1);
+	const cardOpacity = useDerivedValue(() =>
+		withTiming(item.isCompleted ? 0.55 : 1, { duration: ANIMATION_DURATION }),
+	);
 
-	useEffect(() => {
-		opacity.value = withTiming(item.isCompleted ? 0.6 : 1, {
-			duration: ANIMATION_DURATION,
-		});
-	}, [item.isCompleted, opacity]);
-
-	const animatedCardStyle = useAnimatedStyle(() => ({
-		opacity: opacity.value,
+	const animatedContainerStyle = useAnimatedStyle(() => ({
+		opacity: cardOpacity.value,
+		marginBottom: 12,
 	}));
 
 	const animatedCheckboxStyle = useAnimatedStyle(() => ({
-		transform: [{ scale: scale.value }],
+		transform: [{ scale: checkboxScale.value }],
 	}));
 
 	function handleCheckboxChange(checked: boolean) {
-		scale.value = withTiming(1.2, { duration: 100 }, () => {
-			scale.value = withTiming(1, { duration: 100 });
-		});
+		checkboxScale.value = withSpring(
+			0.8,
+			{ damping: 15, stiffness: 400 },
+			() => {
+				checkboxScale.value = withSpring(1, { damping: 10, stiffness: 300 });
+			},
+		);
 
+		doUpdate(checked);
+	}
+
+	function doUpdate(checked: boolean) {
 		updateItem(
 			{ is_completed: checked },
 			{
@@ -125,24 +132,24 @@ export function ListItemCard(props: ListItemCardProps) {
 		: null;
 
 	return (
-		<Animated.View style={animatedCardStyle}>
+		<Animated.View style={animatedContainerStyle}>
 			<Card
 				className={cn(
-					"flex-row items-center gap-3 px-4 py-3",
-					item.isCompleted && "bg-muted",
-					isActive && "opacity-90 shadow-lg",
+					"flex-row items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3",
+					item.isCompleted && "bg-muted/50",
+					isActive && "opacity-90 shadow-lg shadow-black/10",
 				)}
 			>
 				<Pressable
 					onPressIn={onDragStart}
 					onPressOut={onDragEnd}
-					className="size-8 items-center justify-center"
+					className="mt-0.5 size-8 items-center justify-center"
 					hitSlop={8}
 				>
 					<Icon as={GripVertical} className="text-muted-foreground" size={18} />
 				</Pressable>
 
-				<Animated.View style={animatedCheckboxStyle}>
+				<Animated.View style={animatedCheckboxStyle} className="mt-1.5">
 					<Checkbox
 						checked={item.isCompleted}
 						onCheckedChange={handleCheckboxChange}
@@ -152,15 +159,17 @@ export function ListItemCard(props: ListItemCardProps) {
 				<Pressable
 					onPress={() => setIsCategoryDialogOpen(true)}
 					className={cn(
-						"size-8 items-center justify-center rounded-full",
-						CategoryIconComponent ? "bg-primary/10" : "bg-muted",
+						"mt-0.5 size-8 items-center justify-center rounded-full",
+						CategoryIconComponent ? "bg-muted" : "bg-muted",
 					)}
 					hitSlop={4}
 				>
 					<Icon
 						as={CategoryIconComponent ?? Ban}
 						className={
-							CategoryIconComponent ? "text-primary" : "text-muted-foreground"
+							CategoryIconComponent
+								? "text-foreground"
+								: "text-muted-foreground"
 						}
 						size={16}
 					/>
@@ -172,11 +181,12 @@ export function ListItemCard(props: ListItemCardProps) {
 							value={editingTitle}
 							onChangeText={setEditingTitle}
 							onFocus={onInputFocus}
+							onPressIn={onInputFocus}
 							onBlur={handleTitleBlur}
 							autoFocus
 							placeholder="Tytuł elementu..."
 							className={cn(
-								"h-auto min-h-0 border-0 p-0 py-0 shadow-none",
+								"h-auto min-h-0 border-0 p-0 py-1 shadow-none",
 								item.isCompleted
 									? "bg-muted dark:bg-muted"
 									: "bg-card dark:bg-card",
@@ -185,7 +195,10 @@ export function ListItemCard(props: ListItemCardProps) {
 							)}
 						/>
 					) : (
-						<Pressable onPress={handleTitlePress}>
+						<Pressable
+							onPress={handleTitlePress}
+							className="min-h-[28px] justify-center"
+						>
 							<Text
 								className={cn(
 									"text-base font-medium",
@@ -203,20 +216,34 @@ export function ListItemCard(props: ListItemCardProps) {
 							value={editingDescription}
 							onChangeText={setEditingDescription}
 							onFocus={onInputFocus}
+							onPressIn={onInputFocus}
 							onBlur={handleDescriptionBlur}
 							autoFocus
 							placeholder="Dodatkowy opis..."
 							className={cn(
-								"h-auto min-h-0 border-0 p-0 py-0 shadow-none text-sm text-muted-foreground",
+								"h-auto min-h-0 border-0 p-0 py-1 shadow-none text-sm",
 								item.isCompleted
 									? "bg-muted dark:bg-muted"
 									: "bg-card dark:bg-card",
+								editingDescription
+									? "text-foreground"
+									: "text-muted-foreground",
 							)}
 							textAlignVertical="top"
 						/>
 					) : (
-						<Pressable onPress={handleDescriptionPress}>
-							<Text className="text-sm text-muted-foreground">
+						<Pressable
+							onPress={handleDescriptionPress}
+							className="min-h-[24px] justify-center"
+						>
+							<Text
+								className={cn(
+									"text-sm",
+									item.description
+										? "text-foreground"
+										: "text-muted-foreground",
+								)}
+							>
 								{item.description || "Dodatkowy opis..."}
 							</Text>
 						</Pressable>
@@ -231,7 +258,7 @@ export function ListItemCard(props: ListItemCardProps) {
 							},
 						})
 					}
-					className="size-8 items-center justify-center rounded-full active:bg-destructive/20"
+					className="mt-0.5 size-8 items-center justify-center rounded-full active:bg-destructive/20"
 					hitSlop={8}
 				>
 					<Icon as={X} className="text-destructive" size={18} />

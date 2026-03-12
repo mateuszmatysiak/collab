@@ -1,12 +1,31 @@
-import { ScrollView, View } from "react-native";
-import { Button } from "@/components/ui/Button";
+import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import type { ListFilter } from "./ListsContent";
 
-const FILTERS: { value: ListFilter; label: string }[] = [
-	{ value: "all", label: "Wszystkie listy" },
-	{ value: "mine", label: "Moje listy" },
-	{ value: "shared", label: "Udostępnione mi listy" },
+const FILTERS: {
+	value: ListFilter;
+	label: string;
+	activeClass: string;
+	activeTextClass: string;
+}[] = [
+	{
+		value: "all",
+		label: "Wszystkie",
+		activeClass: "bg-slate-700 dark:bg-slate-300",
+		activeTextClass: "text-white dark:text-slate-900",
+	},
+	{
+		value: "mine",
+		label: "Moje",
+		activeClass: "bg-blue-600 dark:bg-blue-500",
+		activeTextClass: "text-white",
+	},
+	{
+		value: "shared",
+		label: "Udostępnione",
+		activeClass: "bg-purple-500 dark:bg-purple-400",
+		activeTextClass: "text-white",
+	},
 ];
 
 interface ListFiltersProps {
@@ -18,21 +37,32 @@ export function ListFilters(props: ListFiltersProps) {
 	const { filter, onFilterChange } = props;
 
 	return (
-		<View className="px-6 pb-4">
+		<View className="px-5 pb-4 pt-1">
 			<ScrollView
 				horizontal
 				showsHorizontalScrollIndicator={false}
 				contentContainerClassName="gap-2"
 			>
 				{FILTERS.map((f) => (
-					<Button
+					<Pressable
 						key={f.value}
-						variant={filter === f.value ? "default" : "outline"}
-						size="sm"
 						onPress={() => onFilterChange(f.value)}
+						className={
+							filter === f.value
+								? `rounded-full border border-transparent ${f.activeClass} px-5 py-2.5`
+								: "rounded-full border border-border bg-card px-5 py-2.5"
+						}
 					>
-						<Text>{f.label}</Text>
-					</Button>
+						<Text
+							className={
+								filter === f.value
+									? `text-sm font-semibold ${f.activeTextClass}`
+									: "text-sm font-medium text-muted-foreground"
+							}
+						>
+							{f.label}
+						</Text>
+					</Pressable>
 				))}
 			</ScrollView>
 		</View>
