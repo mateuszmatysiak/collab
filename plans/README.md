@@ -163,6 +163,20 @@ Data ustalenia: 2026-03-07
 - `apps/mobile/app/index.tsx` — usunięto `ServerHealthGuard` wrapper, spłaszczono `IndexContent` do default exportu. Aplikacja startuje bezpośrednio do ekranu auth lub main.
 - `apps/mobile/src/api/queryKeys.ts` — usunięto klucz `server.health`.
 
+### 2026-03-08: Grupa 7 — UI Redesign (MAT-6)
+
+#### MAT-6: Apple Glass UI redesign — DONE
+
+**Zakres:** `lists/index.tsx`, `lists/[id].tsx`, `categories.tsx`, `profile.tsx` + komponenty kart i filtrów.
+
+**Rozwiązanie:**
+- Dodano warstwę gradientowego tła (`GlassScreen`) oraz pastelowe gradienty per element (`getPastelGradient`).
+- Przebudowano ekran list: nagłówek "My Lists", count list, filtry pill i karty w stylu glassmorphism.
+- Przebudowano ekran szczegółu listy: header z licznikiem ukończenia, progress bar, bardziej "glass" filtry i karty elementów.
+- Przebudowano ekran kategorii: nagłówek + subtitle, wyszukiwarka i grid kart z pastelowymi tłami oraz kartą "Add Category".
+- Przebudowano ekran profilu: duży avatar, sekcja Statistics (Lists Created / Shared Lists), sekcja Account z czerwonym przyciskiem Logout.
+- Dodano zależności Expo: `expo-linear-gradient`, `expo-blur` (pod dalsze rozszerzenia glass effect).
+
 ---
 
 ## Kolejność realizacji (priorytet)
@@ -232,11 +246,11 @@ Data ustalenia: 2026-03-07
 
 **Uzasadnienie:** MAT-49 (Hono RPC) przed MAT-18 i MAT-45 aby nie refaktorować dwa razy. MAT-35 po MAT-45 bo sync offline musi współgrać z WS.
 
-### 7. UI Redesign
+### 7. UI Redesign — DONE (2026-03-08)
 
-| # | Zadanie | Priorytet | Plan | Zależności |
-|---|---------|-----------|------|------------|
-| 26 | **MAT-6** — Apple Glass UI redesign | Low | [Plan](./MAT-6-ui-redesign.md) | Stabilna architektura |
+| # | Zadanie | Priorytet | Status | Plan | Zależności |
+|---|---------|-----------|--------|------|------------|
+| 26 | **MAT-6** — Apple Glass UI redesign | Low | DONE | [Plan](./MAT-6-ui-redesign.md) | Stabilna architektura |
 
 **Uzasadnienie:** Duży refactor — lepiej po zakończeniu zmian funkcjonalnych i architektonicznych. Mockupy dostarczone.
 
