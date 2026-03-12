@@ -1,5 +1,5 @@
 import type { Category } from "@collab-list/shared/types";
-import { Trash2 } from "lucide-react-native";
+import { X } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { Icon } from "@/components/ui/Icon";
@@ -55,18 +55,24 @@ export function CategoryCard(props: CategoryCardProps) {
 					delayLongPress={300}
 					className="flex-1"
 				>
-					<View className="flex-1 items-center justify-center rounded-xl bg-card border border-border p-3 relative">
+					<View className="relative flex-1 items-center justify-center rounded-2xl border border-border bg-card p-3">
 						<Pressable
-							onPress={handleDeletePress}
+							onPress={(e) => {
+								e.stopPropagation();
+								handleDeletePress();
+							}}
 							onStartShouldSetResponder={() => true}
-							className="absolute top-2 right-2 p-1 rounded-full bg-destructive/10 active:bg-destructive/20 z-10"
+							className="absolute right-0 top-0 z-10 size-8 items-center justify-center rounded-bl-xl rounded-tr-2xl bg-destructive/10 active:bg-destructive/20"
 						>
-							<Icon as={Trash2} className="text-destructive" size={16} />
+							<Icon as={X} className="text-destructive" size={12} />
 						</Pressable>
-						<View className="size-12 items-center justify-center rounded-full bg-primary/10 mb-2">
+						<View className="mb-2 size-12 items-center justify-center rounded-xl bg-primary/10">
 							<Icon as={IconComponent} className="text-primary" size={24} />
 						</View>
-						<Text className="text-sm font-medium text-center" numberOfLines={2}>
+						<Text
+							className="text-center text-sm font-semibold text-foreground"
+							numberOfLines={2}
+						>
 							{category.name}
 						</Text>
 					</View>

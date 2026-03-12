@@ -138,7 +138,7 @@ export function IconPicker(props: IconPickerProps) {
 	return (
 		<View className="gap-2">
 			<View
-				className="flex-row items-center gap-2 rounded-lg border border-border bg-background px-3"
+				className="flex-row items-center gap-2 rounded-xl border border-input bg-card dark:bg-background px-4 h-12"
 				pointerEvents="box-none"
 			>
 				<Icon
@@ -151,35 +151,41 @@ export function IconPicker(props: IconPickerProps) {
 					placeholder="Szukaj ikony..."
 					value={search}
 					onChangeText={setSearch}
-					className="flex-1 border-0 bg-transparent px-0 shadow-none"
+					className="flex-1 border-0 bg-transparent dark:bg-transparent px-0 h-auto shadow-none"
 				/>
 			</View>
 
-			<ScrollView className="max-h-48" keyboardShouldPersistTaps="handled">
-				<View className="flex-row flex-wrap gap-2">
+			<ScrollView
+				className="max-h-48"
+				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator
+				persistentScrollbar
+			>
+				<View className="flex-row flex-wrap pb-2">
 					{filteredIcons.map((iconName) => {
 						const IconComponent = getCategoryIcon(iconName);
 						const isSelected = selectedIcon === iconName;
 
 						return (
-							<Pressable
-								key={iconName}
-								onPress={() => onSelectIcon(iconName)}
-								className={cn(
-									"size-10 items-center justify-center rounded-lg border",
-									isSelected
-										? "border-primary bg-primary/10"
-										: "border-border bg-background",
-								)}
-							>
-								<Icon
-									as={IconComponent}
-									className={
-										isSelected ? "text-primary" : "text-muted-foreground"
-									}
-									size={20}
-								/>
-							</Pressable>
+							<View key={iconName} className="w-[12.5%] items-center pb-2">
+								<Pressable
+									onPress={() => onSelectIcon(iconName)}
+									className={cn(
+										"size-10 items-center justify-center rounded-lg border",
+										isSelected
+											? "border-primary bg-primary/10"
+											: "border-border bg-background",
+									)}
+								>
+									<Icon
+										as={IconComponent}
+										className={
+											isSelected ? "text-primary" : "text-muted-foreground"
+										}
+										size={20}
+									/>
+								</Pressable>
+							</View>
 						);
 					})}
 				</View>

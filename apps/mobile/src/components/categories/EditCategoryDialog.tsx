@@ -1,6 +1,6 @@
 import type { Category } from "@collab-list/shared/types";
 import { useState } from "react";
-import { Alert, ScrollView, View } from "react-native";
+import { Alert, View } from "react-native";
 import { useUpdateUserCategory } from "@/api/categories.api";
 import { Button } from "@/components/ui/Button";
 import {
@@ -95,7 +95,7 @@ export function EditCategoryDialog(props: EditCategoryDialogProps) {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-h-[80%]">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Edytuj kategorię</DialogTitle>
 					<DialogDescription>
@@ -103,28 +103,26 @@ export function EditCategoryDialog(props: EditCategoryDialogProps) {
 					</DialogDescription>
 				</DialogHeader>
 
-				<ScrollView className="max-h-64">
-					<View className="gap-4">
-						<View className="gap-2">
-							<Label>Nazwa kategorii</Label>
-							<Input
-								placeholder="np. Artykuły biurowe"
-								value={name}
-								onChangeText={handleChangeName}
-								editable={!isPending}
-								maxLength={MAX_CATEGORY_NAME_LENGTH}
-							/>
-							{nameError ? (
-								<Text className="text-sm text-destructive">{nameError}</Text>
-							) : null}
-						</View>
-
-						<View className="gap-2">
-							<Label>Ikona</Label>
-							<IconPicker selectedIcon={icon} onSelectIcon={setIcon} />
-						</View>
+				<View className="gap-4">
+					<View className="gap-2">
+						<Label>Nazwa kategorii</Label>
+						<Input
+							placeholder="np. Artykuły biurowe"
+							value={name}
+							onChangeText={handleChangeName}
+							editable={!isPending}
+							maxLength={MAX_CATEGORY_NAME_LENGTH}
+						/>
+						{nameError ? (
+							<Text className="text-sm text-destructive">{nameError}</Text>
+						) : null}
 					</View>
-				</ScrollView>
+
+					<View className="gap-2">
+						<Label>Ikona</Label>
+						<IconPicker selectedIcon={icon} onSelectIcon={setIcon} />
+					</View>
+				</View>
 
 				<DialogFooter>
 					<Button variant="outline" onPress={handleClose} disabled={isPending}>
