@@ -68,17 +68,19 @@ export default function LoginScreen() {
 					contentContainerStyle={{ flexGrow: 1 }}
 					keyboardShouldPersistTaps="handled"
 				>
-					<View className="flex-1 justify-start px-6 pt-[25%]">
-						<View className="gap-6">
+					<View className="flex-1 items-center justify-center px-6">
+						<View className="w-full max-w-sm gap-6">
 							<View className="gap-2">
-								<Text className="text-3xl font-bold">Zaloguj się</Text>
+								<Text className="text-3xl font-bold text-foreground">
+									Zaloguj się
+								</Text>
 								<Text className="text-muted-foreground">
 									Wprowadź swoje dane, aby się zalogować
 								</Text>
 							</View>
 
 							{error && (
-								<View className="rounded-md bg-destructive/10 p-3">
+								<View className="rounded-xl bg-destructive/10 p-3">
 									<Text className="text-destructive">{error}</Text>
 								</View>
 							)}
@@ -139,7 +141,7 @@ export default function LoginScreen() {
 								<Button
 									onPress={handleSubmit(onSubmit)}
 									disabled={isLoading}
-									className="mt-4"
+									className="mt-2"
 								>
 									<Text>{isLoading ? "Logowanie..." : "Zaloguj się"}</Text>
 								</Button>
@@ -149,7 +151,7 @@ export default function LoginScreen() {
 										Nie masz konta?{" "}
 									</Text>
 									<Text
-										className="text-primary font-medium"
+										className="font-medium text-primary"
 										onPress={() => router.push("/(auth)/register")}
 									>
 										Zarejestruj się

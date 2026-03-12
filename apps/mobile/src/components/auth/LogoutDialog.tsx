@@ -44,15 +44,15 @@ export function LogoutDialog(props: LogoutDialogProps) {
 			{variant === "icon" ? (
 				<Pressable
 					onPress={() => setIsLogoutOpen(true)}
-					className="size-10 items-center justify-center rounded-full bg-muted active:bg-muted/80"
+					className="size-11 items-center justify-center rounded-xl border border-border bg-card active:bg-muted"
 				>
 					<Icon as={LogOut} className="text-foreground" size={20} />
 				</Pressable>
 			) : (
 				<Button
-					variant="default"
+					variant="destructive"
 					onPress={() => setIsLogoutOpen(true)}
-					className="w-full"
+					className="w-full rounded-2xl"
 				>
 					<Icon as={LogOut} className="text-white" size={20} />
 					<Text>Wyloguj</Text>
@@ -60,7 +60,7 @@ export function LogoutDialog(props: LogoutDialogProps) {
 			)}
 
 			<Dialog open={isLogoutOpen} onOpenChange={setIsLogoutOpen}>
-				<DialogContent centered>
+				<DialogContent variant="centered">
 					<DialogHeader>
 						<DialogTitle>Wylogowanie</DialogTitle>
 						<DialogDescription>
