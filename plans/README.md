@@ -207,7 +207,7 @@ Data ustalenia: 2026-03-07
 |---|---------|-----------|--------|------|
 | 7 | **MAT-87** — Usunięcie WakeUpScreen | High | DONE | [Plan](./MAT-87-remove-wakeup-screen.md) |
 
-### 4. Infrastruktura (fundament pod dalszy rozwój)
+### 4. Infrastruktura - (fundament pod dalszy rozwój) - DONE (2026-03-22)
 
 | # | Zadanie | Priorytet | Plan | Zależności |
 |---|---------|-----------|------|------------|
