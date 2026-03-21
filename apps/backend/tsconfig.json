@@ -1,6 +1,7 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"rootDir": "../..",
 		"outDir": "./dist",
 		"paths": {
 			"@collab-list/shared/*": ["../../packages/shared/src/*"]
