@@ -19,18 +19,3 @@ export async function authMiddleware(c: Context, next: Next) {
 		throw new UnauthorizedError("Nieprawidłowy lub wygasły token");
 	}
 }
-
-export async function optionalAuthMiddleware(c: Context, next: Next) {
-	const authHeader = c.req.header("Authorization");
-
-	if (authHeader?.startsWith("Bearer ")) {
-		const token = authHeader.substring(7);
-
-		try {
-			const payload = verifyAccessToken(token);
-			c.set("userId", payload.userId);
-		} catch {}
-	}
-
-	await next();
-}

@@ -1,5 +1,5 @@
 import type { CategoryType } from "@collab-list/shared/types";
-import { and, eq, inArray, max } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, max } from "drizzle-orm";
 import { db } from "../db/index";
 import { listItems, userCategories } from "../db/schema";
 import {
@@ -10,12 +10,20 @@ import {
 import { validateCategoryForList } from "./categories.service";
 import { checkListAccess } from "./lists.service";
 
-export async function getItems(listId: string, userId: string) {
+export async function getItems(
+	listId: string,
+	userId: string,
+	includeDeleted = false,
+) {
 	const access = await checkListAccess(listId, userId);
 
 	if (!access) {
 		throw new NotFoundError("Nie znaleziono listy");
 	}
+
+	const whereCondition = includeDeleted
+		? eq(listItems.listId, listId)
+		: and(eq(listItems.listId, listId), isNull(listItems.deletedAt));
 
 	const items = await db
 		.select({
@@ -29,11 +37,12 @@ export async function getItems(listId: string, userId: string) {
 			categoryIcon: userCategories.icon,
 			categoryName: userCategories.name,
 			position: listItems.position,
+			deletedAt: listItems.deletedAt,
 			createdAt: listItems.createdAt,
 		})
 		.from(listItems)
 		.leftJoin(userCategories, eq(listItems.categoryId, userCategories.id))
-		.where(eq(listItems.listId, listId))
+		.where(whereCondition)
 		.orderBy(listItems.position);
 
 	return items.map((item) => ({
@@ -47,6 +56,7 @@ export async function getItems(listId: string, userId: string) {
 		categoryIcon: item.categoryIcon ?? null,
 		categoryName: item.categoryName ?? null,
 		position: item.position,
+		deletedAt: item.deletedAt,
 		createdAt: item.createdAt,
 	}));
 }
@@ -85,7 +95,7 @@ export async function createItem(
 	const [maxPositionResult] = await db
 		.select({ maxPosition: max(listItems.position) })
 		.from(listItems)
-		.where(eq(listItems.listId, listId));
+		.where(and(eq(listItems.listId, listId), isNull(listItems.deletedAt)));
 
 	const nextPosition = (maxPositionResult?.maxPosition ?? -1) + 1;
 
@@ -118,6 +128,7 @@ export async function createItem(
 			categoryIcon: userCategories.icon,
 			categoryName: userCategories.name,
 			position: listItems.position,
+			deletedAt: listItems.deletedAt,
 			createdAt: listItems.createdAt,
 		})
 		.from(listItems)
@@ -140,6 +151,7 @@ export async function createItem(
 		categoryIcon: itemWithCategory.categoryIcon ?? null,
 		categoryName: itemWithCategory.categoryName ?? null,
 		position: itemWithCategory.position,
+		deletedAt: itemWithCategory.deletedAt,
 		createdAt: itemWithCategory.createdAt,
 	};
 }
@@ -239,6 +251,7 @@ export async function updateItem(
 			categoryIcon: userCategories.icon,
 			categoryName: userCategories.name,
 			position: listItems.position,
+			deletedAt: listItems.deletedAt,
 			createdAt: listItems.createdAt,
 		})
 		.from(listItems)
@@ -261,6 +274,7 @@ export async function updateItem(
 		categoryIcon: itemWithCategory.categoryIcon ?? null,
 		categoryName: itemWithCategory.categoryName ?? null,
 		position: itemWithCategory.position,
+		deletedAt: itemWithCategory.deletedAt,
 		createdAt: itemWithCategory.createdAt,
 	};
 }
@@ -296,7 +310,10 @@ export async function deleteItem(
 		throw new NotFoundError("Element nie należy do tej listy");
 	}
 
-	await db.delete(listItems).where(eq(listItems.id, itemId));
+	await db
+		.update(listItems)
+		.set({ deletedAt: new Date() })
+		.where(eq(listItems.id, itemId));
 }
 
 export async function resetAllItems(listId: string, userId: string) {
@@ -315,7 +332,13 @@ export async function resetAllItems(listId: string, userId: string) {
 	await db
 		.update(listItems)
 		.set({ isCompleted: false })
-		.where(and(eq(listItems.listId, listId), eq(listItems.isCompleted, true)));
+		.where(
+			and(
+				eq(listItems.listId, listId),
+				eq(listItems.isCompleted, true),
+				isNull(listItems.deletedAt),
+			),
+		);
 }
 
 export async function deleteCompletedItems(listId: string, userId: string) {
@@ -332,8 +355,15 @@ export async function deleteCompletedItems(listId: string, userId: string) {
 	}
 
 	await db
-		.delete(listItems)
-		.where(and(eq(listItems.listId, listId), eq(listItems.isCompleted, true)));
+		.update(listItems)
+		.set({ deletedAt: new Date() })
+		.where(
+			and(
+				eq(listItems.listId, listId),
+				eq(listItems.isCompleted, true),
+				isNull(listItems.deletedAt),
+			),
+		);
 }
 
 export async function reorderItems(
@@ -356,7 +386,13 @@ export async function reorderItems(
 	const existingItems = await db
 		.select({ id: listItems.id })
 		.from(listItems)
-		.where(and(eq(listItems.listId, listId), inArray(listItems.id, itemIds)));
+		.where(
+			and(
+				eq(listItems.listId, listId),
+				inArray(listItems.id, itemIds),
+				isNull(listItems.deletedAt),
+			),
+		);
 
 	const existingIds = new Set(existingItems.map((item) => item.id));
 	const invalidIds = itemIds.filter((id) => !existingIds.has(id));
@@ -373,4 +409,113 @@ export async function reorderItems(
 				.where(eq(listItems.id, itemId)),
 		),
 	);
+}
+
+export async function restoreItem(
+	itemId: string,
+	listId: string,
+	userId: string,
+) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do przywracania elementów tej listy",
+		);
+	}
+
+	const [item] = await db
+		.select()
+		.from(listItems)
+		.where(eq(listItems.id, itemId))
+		.limit(1);
+
+	if (!item) {
+		throw new NotFoundError("Nie znaleziono elementu listy");
+	}
+
+	if (item.listId !== listId) {
+		throw new NotFoundError("Element nie należy do tej listy");
+	}
+
+	if (!item.deletedAt) {
+		throw new ValidationError("Element nie jest usunięty");
+	}
+
+	const [maxPositionResult] = await db
+		.select({ maxPosition: max(listItems.position) })
+		.from(listItems)
+		.where(and(eq(listItems.listId, listId), isNull(listItems.deletedAt)));
+
+	const nextPosition = (maxPositionResult?.maxPosition ?? -1) + 1;
+
+	await db
+		.update(listItems)
+		.set({ deletedAt: null, isCompleted: false, position: nextPosition })
+		.where(eq(listItems.id, itemId));
+}
+
+export async function permanentlyDeleteItem(
+	itemId: string,
+	listId: string,
+	userId: string,
+) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do usuwania elementów z tej listy",
+		);
+	}
+
+	const [item] = await db
+		.select()
+		.from(listItems)
+		.where(eq(listItems.id, itemId))
+		.limit(1);
+
+	if (!item) {
+		throw new NotFoundError("Nie znaleziono elementu listy");
+	}
+
+	if (item.listId !== listId) {
+		throw new NotFoundError("Element nie należy do tej listy");
+	}
+
+	if (!item.deletedAt) {
+		throw new ValidationError(
+			"Element nie jest usunięty — najpierw przenieś do kosza",
+		);
+	}
+
+	await db.delete(listItems).where(eq(listItems.id, itemId));
+}
+
+export async function permanentlyDeleteAllDeleted(
+	listId: string,
+	userId: string,
+) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do usuwania elementów z tej listy",
+		);
+	}
+
+	await db
+		.delete(listItems)
+		.where(and(eq(listItems.listId, listId), isNotNull(listItems.deletedAt)));
 }

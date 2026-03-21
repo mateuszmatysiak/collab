@@ -4,8 +4,11 @@ import {
 	deleteCompletedItemsController,
 	deleteItemController,
 	getItemsController,
+	permanentlyDeleteAllDeletedController,
+	permanentlyDeleteItemController,
 	reorderItemsController,
 	resetAllItemsController,
+	restoreItemController,
 	updateItemController,
 } from "../controllers/items.controller";
 
@@ -19,7 +22,16 @@ itemsRoutes.delete(
 	"/:listId/items/completed",
 	...deleteCompletedItemsController,
 );
+itemsRoutes.delete(
+	"/:listId/items/deleted",
+	...permanentlyDeleteAllDeletedController,
+);
 itemsRoutes.patch("/:listId/items/:itemId", ...updateItemController);
 itemsRoutes.delete("/:listId/items/:itemId", ...deleteItemController);
+itemsRoutes.put("/:listId/items/:itemId/restore", ...restoreItemController);
+itemsRoutes.delete(
+	"/:listId/items/:itemId/permanent",
+	...permanentlyDeleteItemController,
+);
 
 export default itemsRoutes;

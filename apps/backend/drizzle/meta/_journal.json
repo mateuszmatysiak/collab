@@ -8,6 +8,13 @@
 			"when": 1767038582340,
 			"tag": "0000_stormy_angel",
 			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1774126963129,
+			"tag": "0001_lively_ricochet",
+			"breakpoints": true
 		}
 	]
 }

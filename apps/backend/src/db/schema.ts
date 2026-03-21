@@ -79,6 +79,7 @@ export const listItems = pgTable(
 		}),
 		categoryType: categoryTypeEnum("category_type"),
 		position: integer("position").default(0).notNull(),
+		deletedAt: timestamp("deleted_at"),
 		createdAt: timestamp("created_at").defaultNow().notNull(),
 	},
 	(table) => [
@@ -87,6 +88,10 @@ export const listItems = pgTable(
 		index("list_items_category_type_idx").on(
 			table.categoryId,
 			table.categoryType,
+		),
+		index("list_items_list_id_deleted_at_idx").on(
+			table.listId,
+			table.deletedAt,
 		),
 	],
 );
