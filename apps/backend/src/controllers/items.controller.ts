@@ -14,6 +14,7 @@ import {
 	permanentlyDeleteItem,
 	reorderItems,
 	resetAllItems,
+	restoreAllDeleted,
 	restoreItem,
 	updateItem,
 } from "../services/items.service";
@@ -132,6 +133,20 @@ export const restoreItemController = [
 		await restoreItem(itemId, listId, userId);
 
 		return c.json({ message: "Element przywrócony pomyślnie" });
+	},
+];
+
+export const restoreAllDeletedController = [
+	authMiddleware,
+	async (c: Context) => {
+		const userId = c.get("userId");
+		const listId = c.req.param("listId");
+
+		await restoreAllDeleted(listId, userId);
+
+		return c.json({
+			message: "Wszystkie usunięte elementy zostały przywrócone",
+		});
 	},
 ];
 

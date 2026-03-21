@@ -8,6 +8,7 @@ import {
 	permanentlyDeleteItemController,
 	reorderItemsController,
 	resetAllItemsController,
+	restoreAllDeletedController,
 	restoreItemController,
 	updateItemController,
 } from "../controllers/items.controller";
@@ -22,6 +23,7 @@ itemsRoutes.delete(
 	"/:listId/items/completed",
 	...deleteCompletedItemsController,
 );
+itemsRoutes.put("/:listId/items/restore-all", ...restoreAllDeletedController);
 itemsRoutes.delete(
 	"/:listId/items/deleted",
 	...permanentlyDeleteAllDeletedController,

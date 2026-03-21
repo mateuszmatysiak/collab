@@ -499,6 +499,42 @@ export async function permanentlyDeleteItem(
 	await db.delete(listItems).where(eq(listItems.id, itemId));
 }
 
+export async function restoreAllDeleted(listId: string, userId: string) {
+	const access = await checkListAccess(listId, userId);
+
+	if (!access) {
+		throw new NotFoundError("Nie znaleziono listy");
+	}
+
+	if (access !== "owner" && access !== "editor") {
+		throw new ForbiddenError(
+			"Nie masz uprawnień do przywracania elementów tej listy",
+		);
+	}
+
+	const [maxPositionResult] = await db
+		.select({ maxPosition: max(listItems.position) })
+		.from(listItems)
+		.where(and(eq(listItems.listId, listId), isNull(listItems.deletedAt)));
+
+	let nextPosition = (maxPositionResult?.maxPosition ?? -1) + 1;
+
+	const deletedItemsList = await db
+		.select({ id: listItems.id })
+		.from(listItems)
+		.where(and(eq(listItems.listId, listId), isNotNull(listItems.deletedAt)));
+
+	await Promise.all(
+		deletedItemsList.map((item) => {
+			const position = nextPosition++;
+			return db
+				.update(listItems)
+				.set({ deletedAt: null, isCompleted: false, position })
+				.where(eq(listItems.id, item.id));
+		}),
+	);
+}
+
 export async function permanentlyDeleteAllDeleted(
 	listId: string,
 	userId: string,
