@@ -10,7 +10,9 @@ import { queryKeys } from "./queryKeys";
 
 export function fetchItems(listId: string) {
 	return apiClient
-		.get<{ items: ListItem[] }>(`/api/lists/${listId}/items`)
+		.get<{ items: ListItem[] }>(`/api/lists/${listId}/items`, {
+			params: { includeDeleted: "true" },
+		})
 		.then((res) => res.data.items);
 }
 
@@ -124,7 +126,10 @@ export const useDeleteItem = (listId: string, itemId: string) => {
 
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
-				(oldItems = []) => oldItems.filter((item) => item.id !== itemId),
+				(oldItems = []) =>
+					oldItems.map((item) =>
+						item.id === itemId ? { ...item, deletedAt: new Date() } : item,
+					),
 			);
 
 			return { previousItems };
@@ -169,7 +174,9 @@ export const useResetAllItems = (listId: string) => {
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
 				(oldItems = []) =>
-					oldItems.map((item) => ({ ...item, isCompleted: false })),
+					oldItems.map((item) =>
+						item.deletedAt ? item : { ...item, isCompleted: false },
+					),
 			);
 
 			return { previousItems };
@@ -215,7 +222,12 @@ export const useDeleteCompletedItems = (listId: string) => {
 
 			queryClient.setQueryData<ListItem[]>(
 				queryKeys.lists.items(listId),
-				(oldItems = []) => oldItems.filter((item) => !item.isCompleted),
+				(oldItems = []) =>
+					oldItems.map((item) =>
+						item.isCompleted && !item.deletedAt
+							? { ...item, deletedAt: new Date() }
+							: item,
+					),
 			);
 
 			return { previousItems };
@@ -268,10 +280,11 @@ export const useReorderItems = (listId: string) => {
 					})
 					.filter((item): item is ListItem => item !== null);
 
-				queryClient.setQueryData<ListItem[]>(
-					queryKeys.lists.items(listId),
-					reorderedItems,
-				);
+				const deletedItems = previousItems.filter((item) => item.deletedAt);
+				queryClient.setQueryData<ListItem[]>(queryKeys.lists.items(listId), [
+					...reorderedItems,
+					...deletedItems,
+				]);
 			}
 
 			return { previousItems };
@@ -287,6 +300,149 @@ export const useReorderItems = (listId: string) => {
 		onSettled: () => {
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.items(listId),
+			});
+		},
+	});
+};
+
+export const useRestoreItem = (listId: string, itemId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient
+				.put(`/api/lists/${listId}/items/${itemId}/restore`)
+				.then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) =>
+					oldItems.map((item) =>
+						item.id === itemId
+							? { ...item, deletedAt: null, isCompleted: false }
+							: item,
+					),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
+			});
+		},
+	});
+};
+
+export const usePermanentlyDeleteItem = (listId: string, itemId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient
+				.delete(`/api/lists/${listId}/items/${itemId}/permanent`)
+				.then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) => oldItems.filter((item) => item.id !== itemId),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
+			});
+		},
+	});
+};
+
+export const usePermanentlyDeleteAllDeleted = (listId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient
+				.delete(`/api/lists/${listId}/items/deleted`)
+				.then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) => oldItems.filter((item) => !item.deletedAt),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
 			});
 		},
 	});

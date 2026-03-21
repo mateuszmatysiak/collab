@@ -74,8 +74,9 @@ function ListDetailContent(props: ListDetailContentProps) {
 	}, []);
 
 	const isError = isListError || isItemsError;
-	const completedCount = items?.filter((item) => item.isCompleted).length ?? 0;
-	const totalCount = items?.length ?? 0;
+	const activeItems = items?.filter((item) => !item.deletedAt) ?? [];
+	const completedCount = activeItems.filter((item) => item.isCompleted).length;
+	const totalCount = activeItems.length;
 
 	if (isListLoading || isPlaceholderData) {
 		return <ListDetailSkeleton />;

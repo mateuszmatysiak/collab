@@ -18,6 +18,7 @@ import {
 import DragList, { type DragListRenderItemInfo } from "react-native-draglist";
 import {
 	useDeleteCompletedItems,
+	usePermanentlyDeleteAllDeleted,
 	useReorderItems,
 	useResetAllItems,
 } from "@/api/items.api";
@@ -34,6 +35,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Text } from "@/components/ui/Text";
 import { UNCATEGORIZED_FILTER } from "@/lib/constants";
 import { AddItemCard } from "./AddItemCard";
+import { DeletedItemCard } from "./DeletedItemCard";
 import type { ItemFilter } from "./ItemFilters";
 import { ListItemCard } from "./ListItemCard";
 
@@ -42,11 +44,13 @@ type DragListRef = FlatList<ListItem>;
 function filterByStatus(items: ListItem[], filter: ItemFilter): ListItem[] {
 	switch (filter) {
 		case "completed":
-			return items.filter((item) => item.isCompleted);
+			return items.filter((item) => item.isCompleted && !item.deletedAt);
 		case "incomplete":
-			return items.filter((item) => !item.isCompleted);
+			return items.filter((item) => !item.isCompleted && !item.deletedAt);
+		case "deleted":
+			return items.filter((item) => item.deletedAt != null);
 		default:
-			return items;
+			return items.filter((item) => !item.deletedAt);
 	}
 }
 
@@ -103,14 +107,20 @@ export function ListItemsContent(props: ListItemsContentProps) {
 	const layoutHeightRef = useRef(0);
 	const footerHeightRef = useRef(0);
 	const [isCompletedExpanded, setIsCompletedExpanded] = useState(true);
+	const [isDeletedExpanded, setIsDeletedExpanded] = useState(true);
 	const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isPermDeleteDialogOpen, setIsPermDeleteDialogOpen] = useState(false);
 
 	const { mutate: reorderItems } = useReorderItems(listId);
 	const { mutate: resetAllItems, isPending: isResetting } =
 		useResetAllItems(listId);
 	const { mutate: deleteCompletedItems, isPending: isDeletingCompleted } =
 		useDeleteCompletedItems(listId);
+	const {
+		mutate: permanentlyDeleteAllDeleted,
+		isPending: isDeletingAllDeleted,
+	} = usePermanentlyDeleteAllDeleted(listId);
 
 	const [localItems, setLocalItems] = useState(items);
 	const prevItemsRef = useRef(items);
@@ -194,10 +204,18 @@ export function ListItemsContent(props: ListItemsContentProps) {
 		[filteredItems],
 	);
 
+	const deletedItems = useMemo(
+		() => localItems.filter((item) => item.deletedAt != null),
+		[localItems],
+	);
+
 	const showSections = filter === "all";
-	const displayItems = showSections
-		? pendingItems
-		: sortByPosition(filteredItems);
+	const isDeletedFilter = filter === "deleted";
+	const displayItems = isDeletedFilter
+		? []
+		: showSections
+			? pendingItems
+			: sortByPosition(filteredItems);
 
 	const handleReordered = useCallback(
 		(fromIndex: number, toIndex: number) => {
@@ -205,15 +223,16 @@ export function ListItemsContent(props: ListItemsContentProps) {
 			const targetItem = displayItems[toIndex];
 			if (!movedItem || !targetItem) return;
 
-			const fullFromIndex = localItems.findIndex(
+			const activeItems = localItems.filter((item) => !item.deletedAt);
+			const fullFromIndex = activeItems.findIndex(
 				(item) => item.id === movedItem.id,
 			);
-			const fullToIndex = localItems.findIndex(
+			const fullToIndex = activeItems.findIndex(
 				(item) => item.id === targetItem.id,
 			);
 			if (fullFromIndex === -1 || fullToIndex === -1) return;
 
-			const newOrder = [...localItems];
+			const newOrder = [...activeItems];
 			const [removed] = newOrder.splice(fullFromIndex, 1);
 			if (!removed) return;
 			newOrder.splice(fullToIndex, 0, removed);
@@ -222,7 +241,8 @@ export function ListItemsContent(props: ListItemsContentProps) {
 				...item,
 				position: index,
 			}));
-			setLocalItems(reorderedItems);
+			const deleted = localItems.filter((item) => item.deletedAt);
+			setLocalItems([...reorderedItems, ...deleted]);
 
 			const itemIds = newOrder.map((item) => item.id);
 			reorderItems({ itemIds });
@@ -271,14 +291,32 @@ export function ListItemsContent(props: ListItemsContentProps) {
 		});
 	}
 
+	function handlePermDeleteAllConfirm() {
+		permanentlyDeleteAllDeleted(undefined, {
+			onSuccess: () => {
+				setIsPermDeleteDialogOpen(false);
+				setIsDeletedExpanded(false);
+			},
+			onError: () => {
+				Alert.alert("Błąd", "Nie udało się trwale usunąć elementów.");
+			},
+		});
+	}
+
 	const footerContent = (
-		<View onLayout={(e) => { footerHeightRef.current = e.nativeEvent.layout.height; }}>
-			<AddItemCard
-				listId={listId}
-				filterCategoryId={filterCategoryId}
-				filterCategoryType={filterCategoryType}
-				onInputFocus={scrollToAddItem}
-			/>
+		<View
+			onLayout={(e) => {
+				footerHeightRef.current = e.nativeEvent.layout.height;
+			}}
+		>
+			{!isDeletedFilter && (
+				<AddItemCard
+					listId={listId}
+					filterCategoryId={filterCategoryId}
+					filterCategoryType={filterCategoryType}
+					onInputFocus={scrollToAddItem}
+				/>
+			)}
 
 			{showSections && completedItems.length > 0 && (
 				<View className="mt-4 rounded-2xl border border-border bg-card px-3">
@@ -328,6 +366,41 @@ export function ListItemsContent(props: ListItemsContentProps) {
 							))}
 				</View>
 			)}
+
+			{((filter === "all" && deletedItems.length > 0) || isDeletedFilter) &&
+				deletedItems.length > 0 && (
+					<View className="mt-4 rounded-2xl border border-border bg-card px-3">
+						<Pressable
+							onPress={() => setIsDeletedExpanded((prev) => !prev)}
+							className="flex-row items-center gap-2 py-3"
+						>
+							<Icon
+								as={isDeletedExpanded ? ChevronDown : ChevronRight}
+								className="text-muted-foreground"
+								size={20}
+							/>
+							<Text className="text-sm font-medium text-muted-foreground">
+								Usunięte ({deletedItems.length})
+							</Text>
+
+							<View className="ml-auto flex-row gap-1">
+								<Pressable
+									onPress={() => setIsPermDeleteDialogOpen(true)}
+									disabled={isDeletingAllDeleted}
+									className="size-8 items-center justify-center rounded-full active:bg-destructive/10"
+									hitSlop={4}
+								>
+									<Icon as={Trash2} className="text-destructive" size={16} />
+								</Pressable>
+							</View>
+						</Pressable>
+
+						{isDeletedExpanded &&
+							deletedItems.map((item) => (
+								<DeletedItemCard key={item.id} item={item} listId={listId} />
+							))}
+					</View>
+				)}
 		</View>
 	);
 
@@ -345,8 +418,12 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					keyExtractor={(item) => item.id}
 					renderItem={renderItem}
 					onReordered={handleReordered}
-					onContentSizeChange={(_w, h) => { contentHeightRef.current = h; }}
-					onLayout={(e) => { layoutHeightRef.current = e.nativeEvent.layout.height; }}
+					onContentSizeChange={(_w, h) => {
+						contentHeightRef.current = h;
+					}}
+					onLayout={(e) => {
+						layoutHeightRef.current = e.nativeEvent.layout.height;
+					}}
 					contentContainerClassName="px-5 pb-28"
 					showsVerticalScrollIndicator={false}
 					keyboardShouldPersistTaps="handled"
@@ -412,6 +489,39 @@ export function ListItemsContent(props: ListItemsContentProps) {
 							disabled={isDeletingCompleted}
 						>
 							<Text>{isDeletingCompleted ? "Usuwanie..." : "Usuń"}</Text>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={isPermDeleteDialogOpen}
+				onOpenChange={setIsPermDeleteDialogOpen}
+			>
+				<DialogContent variant="centered">
+					<DialogHeader>
+						<DialogTitle>Trwałe usunięcie</DialogTitle>
+						<DialogDescription>
+							Czy na pewno chcesz trwale usunąć {deletedItems.length} elementów?
+							Tej operacji nie można cofnąć.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onPress={() => setIsPermDeleteDialogOpen(false)}
+							disabled={isDeletingAllDeleted}
+						>
+							<Text>Anuluj</Text>
+						</Button>
+						<Button
+							variant="destructive"
+							onPress={handlePermDeleteAllConfirm}
+							disabled={isDeletingAllDeleted}
+						>
+							<Text>
+								{isDeletingAllDeleted ? "Usuwanie..." : "Usuń trwale"}
+							</Text>
 						</Button>
 					</DialogFooter>
 				</DialogContent>

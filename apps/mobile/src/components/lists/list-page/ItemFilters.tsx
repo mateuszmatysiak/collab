@@ -1,12 +1,13 @@
 import { View } from "react-native";
 import { GlassSelect } from "@/components/ui/GlassSelect";
 
-export type ItemFilter = "all" | "completed" | "incomplete";
+export type ItemFilter = "all" | "completed" | "incomplete" | "deleted";
 
 const FILTER_OPTIONS: { value: ItemFilter; label: string }[] = [
 	{ value: "all", label: "Wszystkie" },
 	{ value: "incomplete", label: "Aktywne" },
 	{ value: "completed", label: "Ukończone" },
+	{ value: "deleted", label: "Usunięte" },
 ];
 
 interface ItemFiltersProps {
