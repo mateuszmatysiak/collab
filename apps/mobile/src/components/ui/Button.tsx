@@ -122,4 +122,3 @@ function Button(props: ButtonProps) {
 }
 
 export { Button };
-export type { ButtonProps };
