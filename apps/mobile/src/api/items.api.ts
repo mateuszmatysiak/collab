@@ -402,6 +402,57 @@ export const usePermanentlyDeleteItem = (listId: string, itemId: string) => {
 	});
 };
 
+export const useRestoreAllDeleted = (listId: string) => {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: () =>
+			apiClient
+				.put(`/api/lists/${listId}/items/restore-all`)
+				.then((res) => res.data),
+		onMutate: async () => {
+			await queryClient.cancelQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+
+			const previousItems = queryClient.getQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+			);
+
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) =>
+					oldItems.map((item) =>
+						item.deletedAt
+							? { ...item, deletedAt: null, isCompleted: false }
+							: item,
+					),
+			);
+
+			return { previousItems };
+		},
+		onError: (_err, _variables, context) => {
+			if (context?.previousItems) {
+				queryClient.setQueryData(
+					queryKeys.lists.items(listId),
+					context.previousItems,
+				);
+			}
+		},
+		onSettled: () => {
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.items(listId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.all,
+			});
+			queryClient.invalidateQueries({
+				queryKey: queryKeys.lists.detail(listId),
+			});
+		},
+	});
+};
+
 export const usePermanentlyDeleteAllDeleted = (listId: string) => {
 	const queryClient = useQueryClient();
 

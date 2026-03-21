@@ -1,5 +1,5 @@
 import type { ListItem } from "@collab-list/shared/types";
-import { Ban, RotateCcw, Trash2 } from "lucide-react-native";
+import { Ban, RotateCcw, X } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, View } from "react-native";
 import { usePermanentlyDeleteItem, useRestoreItem } from "@/api/items.api";
@@ -99,7 +99,7 @@ export function DeletedItemCard(props: DeletedItemCardProps) {
 						className="size-8 items-center justify-center rounded-full active:bg-destructive/20"
 						hitSlop={8}
 					>
-						<Icon as={Trash2} className="text-destructive" size={16} />
+						<Icon as={X} className="text-destructive" size={16} />
 					</Pressable>
 				</Card>
 			</View>

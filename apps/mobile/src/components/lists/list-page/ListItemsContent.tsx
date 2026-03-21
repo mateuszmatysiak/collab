@@ -21,6 +21,7 @@ import {
 	usePermanentlyDeleteAllDeleted,
 	useReorderItems,
 	useResetAllItems,
+	useRestoreAllDeleted,
 } from "@/api/items.api";
 import { Button } from "@/components/ui/Button";
 import {
@@ -111,6 +112,8 @@ export function ListItemsContent(props: ListItemsContentProps) {
 	const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [isPermDeleteDialogOpen, setIsPermDeleteDialogOpen] = useState(false);
+	const [isRestoreAllDialogOpen, setIsRestoreAllDialogOpen] = useState(false);
+	const dialogCountRef = useRef(0);
 
 	const { mutate: reorderItems } = useReorderItems(listId);
 	const { mutate: resetAllItems, isPending: isResetting } =
@@ -121,6 +124,8 @@ export function ListItemsContent(props: ListItemsContentProps) {
 		mutate: permanentlyDeleteAllDeleted,
 		isPending: isDeletingAllDeleted,
 	} = usePermanentlyDeleteAllDeleted(listId);
+	const { mutate: restoreAllDeleted, isPending: isRestoringAll } =
+		useRestoreAllDeleted(listId);
 
 	const [localItems, setLocalItems] = useState(items);
 	const prevItemsRef = useRef(items);
@@ -211,11 +216,14 @@ export function ListItemsContent(props: ListItemsContentProps) {
 
 	const showSections = filter === "all";
 	const isDeletedFilter = filter === "deleted";
-	const displayItems = isDeletedFilter
-		? []
-		: showSections
-			? pendingItems
-			: sortByPosition(filteredItems);
+	const isCompletedFilter = filter === "completed";
+
+	const displayItems =
+		isDeletedFilter || isCompletedFilter
+			? []
+			: showSections
+				? pendingItems
+				: sortByPosition(filteredItems);
 
 	const handleReordered = useCallback(
 		(fromIndex: number, toIndex: number) => {
@@ -291,6 +299,18 @@ export function ListItemsContent(props: ListItemsContentProps) {
 		});
 	}
 
+	function handleRestoreAllConfirm() {
+		restoreAllDeleted(undefined, {
+			onSuccess: () => {
+				setIsRestoreAllDialogOpen(false);
+				setIsDeletedExpanded(false);
+			},
+			onError: () => {
+				Alert.alert("Błąd", "Nie udało się przywrócić elementów.");
+			},
+		});
+	}
+
 	function handlePermDeleteAllConfirm() {
 		permanentlyDeleteAllDeleted(undefined, {
 			onSuccess: () => {
@@ -309,7 +329,7 @@ export function ListItemsContent(props: ListItemsContentProps) {
 				footerHeightRef.current = e.nativeEvent.layout.height;
 			}}
 		>
-			{!isDeletedFilter && (
+			{!isDeletedFilter && !isCompletedFilter && (
 				<AddItemCard
 					listId={listId}
 					filterCategoryId={filterCategoryId}
@@ -317,6 +337,64 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					onInputFocus={scrollToAddItem}
 				/>
 			)}
+
+			{isCompletedFilter &&
+				(filteredItems.length > 0 ? (
+					<View className="mt-4 rounded-2xl border border-border bg-card px-3">
+						<Pressable
+							onPress={() => setIsCompletedExpanded((prev) => !prev)}
+							className="flex-row items-center gap-2 py-3"
+						>
+							<Icon
+								as={isCompletedExpanded ? ChevronDown : ChevronRight}
+								className="text-muted-foreground"
+								size={20}
+							/>
+							<Text className="text-sm font-medium text-muted-foreground">
+								Ukończone ({filteredItems.length})
+							</Text>
+
+							<View className="ml-auto flex-row gap-1">
+								<Pressable
+									onPress={() => setIsResetDialogOpen(true)}
+									disabled={isResetting}
+									className="size-8 items-center justify-center rounded-full active:bg-accent"
+									hitSlop={4}
+								>
+									<Icon
+										as={RotateCcw}
+										className="text-muted-foreground"
+										size={16}
+									/>
+								</Pressable>
+
+								<Pressable
+									onPress={() => {
+										dialogCountRef.current =
+											completedItems.length || filteredItems.length;
+										setIsDeleteDialogOpen(true);
+									}}
+									disabled={isDeletingCompleted}
+									className="size-8 items-center justify-center rounded-full active:bg-destructive/10"
+									hitSlop={4}
+								>
+									<Icon as={Trash2} className="text-destructive" size={16} />
+								</Pressable>
+							</View>
+						</Pressable>
+
+						{isCompletedExpanded &&
+							sortByPosition(filteredItems).map((item) => (
+								<ListItemCard key={item.id} item={item} listId={listId} />
+							))}
+					</View>
+				) : (
+					<View className="items-center py-8">
+						<Text className="text-muted-foreground">
+							Brak ukończonych elementów
+						</Text>
+					</View>
+				))}
 
 			{showSections && completedItems.length > 0 && (
 				<View className="mt-4 rounded-2xl border border-border bg-card px-3">
@@ -348,7 +426,11 @@ export function ListItemsContent(props: ListItemsContentProps) {
 							</Pressable>
 
 							<Pressable
-								onPress={() => setIsDeleteDialogOpen(true)}
+								onPress={() => {
+									dialogCountRef.current =
+										completedItems.length || filteredItems.length;
+									setIsDeleteDialogOpen(true);
+								}}
 								disabled={isDeletingCompleted}
 								className="size-8 items-center justify-center rounded-full active:bg-destructive/10"
 								hitSlop={4}
@@ -368,7 +450,7 @@ export function ListItemsContent(props: ListItemsContentProps) {
 			)}
 
 			{((filter === "all" && deletedItems.length > 0) || isDeletedFilter) &&
-				deletedItems.length > 0 && (
+				(deletedItems.length > 0 ? (
 					<View className="mt-4 rounded-2xl border border-border bg-card px-3">
 						<Pressable
 							onPress={() => setIsDeletedExpanded((prev) => !prev)}
@@ -385,7 +467,26 @@ export function ListItemsContent(props: ListItemsContentProps) {
 
 							<View className="ml-auto flex-row gap-1">
 								<Pressable
-									onPress={() => setIsPermDeleteDialogOpen(true)}
+									onPress={() => {
+										dialogCountRef.current = deletedItems.length;
+										setIsRestoreAllDialogOpen(true);
+									}}
+									disabled={isRestoringAll}
+									className="size-8 items-center justify-center rounded-full active:bg-accent"
+									hitSlop={4}
+								>
+									<Icon
+										as={RotateCcw}
+										className="text-muted-foreground"
+										size={16}
+									/>
+								</Pressable>
+
+								<Pressable
+									onPress={() => {
+										dialogCountRef.current = deletedItems.length;
+										setIsPermDeleteDialogOpen(true);
+									}}
 									disabled={isDeletingAllDeleted}
 									className="size-8 items-center justify-center rounded-full active:bg-destructive/10"
 									hitSlop={4}
@@ -400,7 +501,13 @@ export function ListItemsContent(props: ListItemsContentProps) {
 								<DeletedItemCard key={item.id} item={item} listId={listId} />
 							))}
 					</View>
-				)}
+				) : (
+					<View className="items-center py-8">
+						<Text className="text-muted-foreground">
+							Brak usuniętych elementów
+						</Text>
+					</View>
+				))}
 		</View>
 	);
 
@@ -471,7 +578,7 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					<DialogHeader>
 						<DialogTitle>Usuń zaznaczone</DialogTitle>
 						<DialogDescription>
-							Czy na pewno chcesz usunąć {completedItems.length} zaznaczonych
+							Czy na pewno chcesz usunąć {dialogCountRef.current} zaznaczonych
 							elementów?
 						</DialogDescription>
 					</DialogHeader>
@@ -502,8 +609,8 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					<DialogHeader>
 						<DialogTitle>Trwałe usunięcie</DialogTitle>
 						<DialogDescription>
-							Czy na pewno chcesz trwale usunąć {deletedItems.length} elementów?
-							Tej operacji nie można cofnąć.
+							Czy na pewno chcesz trwale usunąć {dialogCountRef.current}{" "}
+							elementów? Tej operacji nie można cofnąć.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>
@@ -522,6 +629,32 @@ export function ListItemsContent(props: ListItemsContentProps) {
 							<Text>
 								{isDeletingAllDeleted ? "Usuwanie..." : "Usuń trwale"}
 							</Text>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+			<Dialog
+				open={isRestoreAllDialogOpen}
+				onOpenChange={setIsRestoreAllDialogOpen}
+			>
+				<DialogContent variant="centered">
+					<DialogHeader>
+						<DialogTitle>Przywróć wszystkie</DialogTitle>
+						<DialogDescription>
+							Czy na pewno chcesz przywrócić {dialogCountRef.current} usuniętych
+							elementów?
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onPress={() => setIsRestoreAllDialogOpen(false)}
+							disabled={isRestoringAll}
+						>
+							<Text>Anuluj</Text>
+						</Button>
+						<Button onPress={handleRestoreAllConfirm} disabled={isRestoringAll}>
+							<Text>{isRestoringAll ? "Przywracanie..." : "Przywróć"}</Text>
 						</Button>
 					</DialogFooter>
 				</DialogContent>
