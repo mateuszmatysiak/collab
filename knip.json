@@ -1,0 +1,19 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"workspaces": {
+		"apps/backend": {
+			"project": ["src/**/*.ts"],
+			"drizzle": false
+		},
+		"apps/mobile": {
+			"entry": ["app/**/*.tsx"],
+			"project": ["src/**/*.ts", "src/**/*.tsx", "app/**/*.tsx"],
+			"ignoreDependencies": ["expo-updates", "@react-navigation/native"]
+		},
+		"packages/shared": {
+			"project": ["src/**/*.ts"]
+		}
+	},
+	"ignoreBinaries": ["eas", "dev"],
+	"ignoreDependencies": ["dotenv"]
+}
