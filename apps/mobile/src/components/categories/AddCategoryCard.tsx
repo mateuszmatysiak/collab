@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useCreateUserCategory } from "@/api/categories.api";
 import { Button } from "@/components/ui/Button";
 import {
@@ -89,18 +89,18 @@ export function AddCategoryCard(props: AddCategoryCardProps) {
 				className="m-1 aspect-square"
 				style={{ width }}
 			>
-				<View className="flex-1 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 p-3">
-					<View className="size-12 items-center justify-center rounded-full bg-muted mb-2">
+				<View className="flex-1 items-center justify-center rounded-2xl border-2 border-dashed border-border p-3">
+					<View className="mb-2 size-12 items-center justify-center rounded-xl bg-muted">
 						<Icon as={Plus} className="text-muted-foreground" size={24} />
 					</View>
-					<Text className="text-sm font-medium text-muted-foreground text-center">
-						Dodaj
+					<Text className="text-center text-sm font-semibold text-muted-foreground">
+						Dodaj kategorię
 					</Text>
 				</View>
 			</Pressable>
 
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
-				<DialogContent className="max-h-[80%]">
+				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Nowa kategoria</DialogTitle>
 						<DialogDescription>
@@ -108,28 +108,26 @@ export function AddCategoryCard(props: AddCategoryCardProps) {
 						</DialogDescription>
 					</DialogHeader>
 
-					<ScrollView className="max-h-64">
-						<View className="gap-4">
-							<View className="gap-2">
-								<Label>Nazwa kategorii</Label>
-								<Input
-									placeholder="np. Artykuły biurowe"
-									value={name}
-									onChangeText={handleChangeName}
-									editable={!isPending}
-									maxLength={MAX_CATEGORY_NAME_LENGTH}
-								/>
-								{nameError ? (
-									<Text className="text-sm text-destructive">{nameError}</Text>
-								) : null}
-							</View>
-
-							<View className="gap-2">
-								<Label>Ikona</Label>
-								<IconPicker selectedIcon={icon} onSelectIcon={setIcon} />
-							</View>
+					<View className="gap-4">
+						<View className="gap-2">
+							<Label>Nazwa kategorii</Label>
+							<Input
+								placeholder="np. Artykuły biurowe"
+								value={name}
+								onChangeText={handleChangeName}
+								editable={!isPending}
+								maxLength={MAX_CATEGORY_NAME_LENGTH}
+							/>
+							{nameError ? (
+								<Text className="text-sm text-destructive">{nameError}</Text>
+							) : null}
 						</View>
-					</ScrollView>
+
+						<View className="gap-2">
+							<Label>Ikona</Label>
+							<IconPicker selectedIcon={icon} onSelectIcon={setIcon} />
+						</View>
+					</View>
 
 					<DialogFooter>
 						<Button

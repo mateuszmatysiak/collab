@@ -1,22 +1,30 @@
-import { Ban } from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { Ban, Layers } from "lucide-react-native";
 import { useMemo } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useListCategories } from "@/api/categories.api";
 import { useItems } from "@/api/items.api";
-import { Button } from "@/components/ui/Button";
-import { Icon } from "@/components/ui/Icon";
-import { Text } from "@/components/ui/Text";
+import { GlassSelect } from "@/components/ui/GlassSelect";
 import { UNCATEGORIZED_FILTER } from "@/lib/constants";
 import { getCategoryIcon } from "@/lib/icons";
 
 interface CategoryFiltersProps {
 	listId: string;
 	selectedCategoryId: string | null;
-	onCategoryChange: (categoryId: string | null) => void;
+	onCategoryChange: (
+		categoryId: string | null,
+		categoryType: string | null,
+	) => void;
+	compact?: boolean;
 }
 
 export function CategoryFilters(props: CategoryFiltersProps) {
-	const { listId, selectedCategoryId, onCategoryChange } = props;
+	const {
+		listId,
+		selectedCategoryId,
+		onCategoryChange,
+		compact = false,
+	} = props;
 
 	const { data: items } = useItems(listId);
 	const { data: allCategories } = useListCategories(listId);
@@ -25,11 +33,11 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 		if (!items || !allCategories) return [];
 
 		const uniqueCategoryIds = new Set<string>();
-		items.forEach((item) => {
+		for (const item of items) {
 			if (item.categoryId) {
 				uniqueCategoryIds.add(item.categoryId);
 			}
-		});
+		}
 
 		return allCategories
 			.filter((category) => uniqueCategoryIds.has(category.id))
@@ -41,75 +49,61 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 		return items.some((item) => item.categoryId === null);
 	}, [items]);
 
-	const isUncategorizedSelected = useMemo(() => {
-		return selectedCategoryId === UNCATEGORIZED_FILTER;
-	}, [selectedCategoryId]);
+	const options = useMemo(() => {
+		const opts: { value: string; label: string; icon?: LucideIcon }[] = [
+			{ value: "__all__", label: "Wszystkie", icon: Layers },
+		];
+		if (hasUncategorizedItems && availableCategories.length > 0) {
+			opts.push({
+				value: UNCATEGORIZED_FILTER,
+				label: "Brak kategorii",
+				icon: Ban,
+			});
+		}
+		for (const cat of availableCategories) {
+			opts.push({
+				value: cat.id,
+				label: cat.name,
+				icon: getCategoryIcon(cat.icon),
+			});
+		}
+		return opts;
+	}, [availableCategories, hasUncategorizedItems]);
 
-	if (availableCategories.length === 0 && !hasUncategorizedItems) {
-		return null;
+	const currentValue = selectedCategoryId ?? "__all__";
+
+	function handleChange(value: string) {
+		if (value === "__all__") {
+			onCategoryChange(null, null);
+			return;
+		}
+		if (value === UNCATEGORIZED_FILTER) {
+			onCategoryChange(UNCATEGORIZED_FILTER, null);
+			return;
+		}
+		const category = availableCategories.find((c) => c.id === value);
+		onCategoryChange(value, category?.type ?? null);
+	}
+
+	if (compact) {
+		return (
+			<GlassSelect
+				options={options}
+				value={currentValue}
+				onValueChange={handleChange}
+				placeholder="Kategoria"
+			/>
+		);
 	}
 
 	return (
 		<View className="px-6 pb-4">
-			<ScrollView
-				horizontal
-				showsHorizontalScrollIndicator={false}
-				contentContainerClassName="gap-2"
-			>
-				<Button
-					variant={selectedCategoryId === null ? "default" : "outline"}
-					size="sm"
-					onPress={() => onCategoryChange(null)}
-				>
-					<Text>Wszystkie kategorie</Text>
-				</Button>
-
-				{availableCategories.map((category) => {
-					const CategoryIconComponent = getCategoryIcon(category.icon);
-
-					const isSelected = selectedCategoryId === category.id;
-
-					return (
-						<Button
-							key={category.id}
-							variant={isSelected ? "default" : "outline"}
-							size="sm"
-							onPress={() => onCategoryChange(category.id)}
-							className="flex-row items-center gap-2"
-						>
-							{CategoryIconComponent && (
-								<Icon
-									as={CategoryIconComponent}
-									className={
-										isSelected ? "text-primary-foreground" : "text-foreground"
-									}
-									size={16}
-								/>
-							)}
-							<Text>{category.name}</Text>
-						</Button>
-					);
-				})}
-
-				{hasUncategorizedItems && availableCategories.length > 0 && (
-					<Button
-						variant={isUncategorizedSelected ? "default" : "outline"}
-						size="sm"
-						onPress={() => onCategoryChange(UNCATEGORIZED_FILTER)}
-					>
-						<Icon
-							as={Ban}
-							className={
-								isUncategorizedSelected
-									? "text-primary-foreground"
-									: "text-foreground"
-							}
-							size={16}
-						/>
-						<Text>Pozostałe kategorie</Text>
-					</Button>
-				)}
-			</ScrollView>
+			<GlassSelect
+				options={options}
+				value={currentValue}
+				onValueChange={handleChange}
+				placeholder="Kategoria"
+			/>
 		</View>
 	);
 }

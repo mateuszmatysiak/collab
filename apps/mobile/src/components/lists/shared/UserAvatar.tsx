@@ -14,8 +14,8 @@ export function UserAvatar(props: UserAvatarProps) {
 
 	return (
 		<Avatar className={cn("size-8", className)} alt={name}>
-			<AvatarFallback>
-				<Text className="text-sm font-medium text-muted-foreground text-center">
+			<AvatarFallback className="bg-primary/15">
+				<Text className="text-sm font-medium text-primary text-center">
 					{initials}
 				</Text>
 			</AvatarFallback>

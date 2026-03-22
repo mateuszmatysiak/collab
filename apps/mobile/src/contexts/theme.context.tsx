@@ -1,4 +1,9 @@
-import { useColorScheme, vars } from "nativewind";
+import {
+	DarkTheme,
+	DefaultTheme,
+	ThemeProvider as NavigationThemeProvider,
+} from "@react-navigation/native";
+import { colorScheme, vars } from "nativewind";
 import {
 	createContext,
 	type PropsWithChildren,
@@ -41,8 +46,8 @@ const darkTheme = createThemeVars(colors.dark);
 
 interface ThemeContextType {
 	theme: Theme;
-	toggleTheme: () => Promise<void>;
-	setTheme: (theme: Theme) => Promise<void>;
+	toggleTheme: () => void;
+	setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -53,14 +58,12 @@ export function ThemeProvider(props: PropsWithChildren) {
 	const [theme, setThemeState] = useState<Theme>("light");
 	const [isLoading, setIsLoading] = useState(true);
 
-	const { setColorScheme } = useColorScheme();
-
 	useEffect(() => {
 		async function loadTheme() {
 			try {
 				const savedTheme = await getTheme();
 				setThemeState(savedTheme);
-				setColorScheme(savedTheme);
+				colorScheme.set(savedTheme);
 			} catch (error) {
 				console.error("Error loading theme:", error);
 			} finally {
@@ -68,29 +71,19 @@ export function ThemeProvider(props: PropsWithChildren) {
 			}
 		}
 		loadTheme();
-	}, [setColorScheme]);
-
-	useEffect(
-		function updateColorScheme() {
-			if (theme && !isLoading) {
-				setColorScheme(theme);
-			}
-		},
-		[theme, isLoading, setColorScheme],
-	);
-
-	const updateTheme = useCallback(async (newTheme: Theme) => {
-		try {
-			await setTheme(newTheme);
-			setThemeState(newTheme);
-		} catch (error) {
-			console.error("Error updating theme:", error);
-		}
 	}, []);
 
-	const toggleTheme = useCallback(async () => {
+	const updateTheme = useCallback((newTheme: Theme) => {
+		setThemeState(newTheme);
+		colorScheme.set(newTheme);
+		setTheme(newTheme).catch((error) => {
+			console.error("Error persisting theme:", error);
+		});
+	}, []);
+
+	const toggleTheme = useCallback(() => {
 		const newTheme = theme === "light" ? "dark" : "light";
-		await updateTheme(newTheme);
+		updateTheme(newTheme);
 	}, [theme, updateTheme]);
 
 	const memoizedValue: ThemeContextType = useMemo(
@@ -102,31 +95,31 @@ export function ThemeProvider(props: PropsWithChildren) {
 		[theme, toggleTheme, updateTheme],
 	);
 
-	if (isLoading) {
-		return (
-			<>
+	const loadingValue: ThemeContextType = useMemo(
+		() => ({
+			theme: "light",
+			toggleTheme: () => {},
+			setTheme: () => {},
+		}),
+		[],
+	);
+
+	const currentTheme = isLoading ? "light" : theme;
+	const themeVars = currentTheme === "dark" ? darkTheme : lightTheme;
+	const navTheme = currentTheme === "dark" ? DarkTheme : DefaultTheme;
+
+	return (
+		<ThemeContext.Provider value={isLoading ? loadingValue : memoizedValue}>
+			<NavigationThemeProvider value={navTheme}>
 				<StatusBar
-					barStyle="dark-content"
+					barStyle={
+						!isLoading && theme === "dark" ? "light-content" : "dark-content"
+					}
 					backgroundColor="transparent"
 					translucent
 				/>
-				<View style={[{ flex: 1 }, lightTheme]} className="bg-background">
-					{children}
-				</View>
-			</>
-		);
-	}
-
-	return (
-		<ThemeContext.Provider value={memoizedValue}>
-			<StatusBar
-				barStyle={theme === "dark" ? "light-content" : "dark-content"}
-				backgroundColor="transparent"
-				translucent
-			/>
-			<View style={[{ flex: 1 }, theme === "dark" ? darkTheme : lightTheme]}>
-				{children}
-			</View>
+				<View style={[{ flex: 1 }, themeVars]}>{children}</View>
+			</NavigationThemeProvider>
 		</ThemeContext.Provider>
 	);
 }

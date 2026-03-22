@@ -12,14 +12,19 @@ export default function CategoriesScreen() {
 	return (
 		<SafeAreaView className="flex-1 bg-background" edges={["top"]}>
 			<View className="flex-1">
-				<View className="flex-row items-center justify-between px-6 py-4">
-					<Text className="text-2xl font-bold">Kategorie</Text>
-					<View className="ml-auto">
-						<LogoutDialog />
+				<View className="mx-5 mt-3 flex-row items-center px-1 py-4">
+					<View className="flex-1">
+						<Text className="text-3xl font-bold text-foreground">
+							Kategorie
+						</Text>
+						<Text className="text-sm text-muted-foreground">
+							Zarządzaj kategoriami list
+						</Text>
 					</View>
+					<LogoutDialog />
 				</View>
 
-				<View className="px-6 pb-4">
+				<View className="px-5 pb-4 pt-1">
 					<CategorySearchInput
 						value={searchQuery}
 						onChangeText={setSearchQuery}

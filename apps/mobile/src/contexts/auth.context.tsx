@@ -29,9 +29,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider(props: PropsWithChildren) {
 	const { children } = props;
 
-	const loginMutation = useLogin();
-	const registerMutation = useRegister();
-	const logoutMutation = useLogout();
+	const { mutateAsync: loginAsync } = useLogin();
+	const { mutateAsync: registerAsync } = useRegister();
+	const { mutateAsync: logoutAsync } = useLogout();
 	const queryClient = useQueryClient();
 
 	const { data: meData, isLoading: isMeLoading, refetch } = useMe();
@@ -39,37 +39,37 @@ export function AuthProvider(props: PropsWithChildren) {
 	const login = useCallback(
 		async (login: string, password: string) => {
 			const data: LoginRequest = { login, password };
-			const response = await loginMutation.mutateAsync(data);
+			const response = await loginAsync(data);
 
 			await setTokens(response.accessToken, response.refreshToken);
 			await refetch();
 		},
-		[loginMutation, refetch],
+		[loginAsync, refetch],
 	);
 
 	const register = useCallback(
 		async (name: string, login: string, password: string) => {
 			const data: RegisterRequest = { name, login, password };
-			const response = await registerMutation.mutateAsync(data);
+			const response = await registerAsync(data);
 
 			await setTokens(response.accessToken, response.refreshToken);
 			await refetch();
 		},
-		[registerMutation, refetch],
+		[registerAsync, refetch],
 	);
 
 	const logout = useCallback(async () => {
 		try {
 			const refreshToken = await getRefreshToken();
 			if (refreshToken) {
-				await logoutMutation.mutateAsync({ refreshToken });
+				await logoutAsync({ refreshToken });
 			}
 		} catch (_error) {
 		} finally {
 			await clearTokens();
 			queryClient.clear();
 		}
-	}, [logoutMutation, queryClient]);
+	}, [logoutAsync, queryClient]);
 
 	const refetchUser = useCallback(async () => {
 		await refetch();

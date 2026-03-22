@@ -4,7 +4,7 @@ import {
 	registerSchema,
 } from "@collab-list/shared/validators";
 import type { Context } from "hono";
-import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 import {
 	authenticateUser,
 	createUser,
@@ -94,13 +94,9 @@ export const logout = [
 ];
 
 export const me = [
-	optionalAuthMiddleware,
+	authMiddleware,
 	async (c: Context) => {
 		const userId = c.get("userId");
-
-		if (!userId) {
-			return c.json({ user: null });
-		}
 
 		const user = await getUserById(userId);
 

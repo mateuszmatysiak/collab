@@ -17,6 +17,41 @@ export const apiClient = axios.create({
 	headers: { "Content-Type": "application/json" },
 });
 
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+	if (refreshPromise) return refreshPromise;
+
+	refreshPromise = (async () => {
+		try {
+			const refreshToken = await getRefreshToken();
+
+			if (!refreshToken) {
+				await clearTokens();
+				throw new Error("No refresh token");
+			}
+
+			const baseURL = getEnv().EXPO_PUBLIC_API_URL;
+			const response = await axios.post(`${baseURL}/api/auth/refresh`, {
+				refreshToken,
+			});
+
+			const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+				response.data;
+
+			await setTokens(newAccessToken, newRefreshToken);
+			return newAccessToken;
+		} catch (error) {
+			await clearTokens();
+			throw error;
+		} finally {
+			refreshPromise = null;
+		}
+	})();
+
+	return refreshPromise;
+}
+
 apiClient.interceptors.request.use(
 	async (config) => {
 		// Lazy initialization baseURL - getEnv() is called here
@@ -44,27 +79,10 @@ apiClient.interceptors.response.use(
 			originalRequest._retry = true;
 
 			try {
-				const refreshToken = await getRefreshToken();
-
-				if (!refreshToken) {
-					await clearTokens();
-					return Promise.reject(error);
-				}
-
-				const baseURL = getEnv().EXPO_PUBLIC_API_URL;
-				const response = await axios.post(`${baseURL}/api/auth/refresh`, {
-					refreshToken,
-				});
-
-				const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-					response.data;
-
-				await setTokens(newAccessToken, newRefreshToken);
-
+				const newAccessToken = await refreshAccessToken();
 				originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 				return apiClient(originalRequest);
 			} catch (refreshError) {
-				await clearTokens();
 				return Promise.reject(refreshError);
 			}
 		}

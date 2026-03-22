@@ -32,12 +32,13 @@ export function getInitials(name: string): string {
 	return `${firstInitial}${lastInitial}`;
 }
 
-export function formatDate(date: string | Date): string {
-	const dateInstance = date instanceof Date ? date : new Date(date);
-
-	return dateInstance.toLocaleDateString("pl-PL", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	});
+export function pluralize(
+	count: number,
+	one: string,
+	few: string,
+	many: string,
+): string {
+	if (count === 1) return one;
+	if (count >= 2 && count <= 4) return few;
+	return many;
 }

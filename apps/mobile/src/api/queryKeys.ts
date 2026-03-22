@@ -1,6 +1,6 @@
 export const queryKeys = {
-	server: {
-		health: ["server", "health"] as const,
+	auth: {
+		me: ["auth", "me"] as const,
 	},
 	lists: {
 		all: ["lists"] as const,
@@ -10,6 +10,7 @@ export const queryKeys = {
 	},
 	categories: {
 		user: ["categories", "user"] as const,
+		listAll: ["categories", "list"] as const,
 		list: (listId: string) => ["categories", "list", listId] as const,
 	},
 };

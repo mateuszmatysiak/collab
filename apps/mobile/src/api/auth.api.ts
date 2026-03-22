@@ -6,6 +6,7 @@ import type {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_STALE_TIME_MS } from "@/lib/constants";
 import { apiClient } from "./client";
+import { queryKeys } from "./queryKeys";
 
 export function useLogin() {
 	return useMutation({
@@ -30,7 +31,7 @@ export function useLogout() {
 
 export function useMe(enabled = true) {
 	return useQuery({
-		queryKey: ["auth", "me"],
+		queryKey: queryKeys.auth.me,
 		queryFn: () => apiClient.get("/api/auth/me").then((res) => res.data),
 		enabled,
 		retry: false,

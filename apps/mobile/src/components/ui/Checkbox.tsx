@@ -15,10 +15,11 @@ const Checkbox = React.forwardRef<
 			ref={ref}
 			checked={checked}
 			className={cn(
-				"size-5 rounded-sm border border-primary flex items-center justify-center",
+				"size-7 rounded-sm border border-primary flex items-center justify-center",
 				checked && "bg-primary",
 				className,
 			)}
+			hitSlop={8}
 			{...restProps}
 		>
 			<CheckboxPrimitive.Indicator>

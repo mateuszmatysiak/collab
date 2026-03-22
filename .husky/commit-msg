@@ -1,0 +1,20 @@
+commit_msg=$(cat "$1")
+
+# Allowed scopes
+allowed_scopes="backend|mobile|shared|chore|docs|ci"
+
+# Pattern: scope: Message (capital letter after colon)
+pattern="^($allowed_scopes): [A-Z].*$"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo ""
+    echo "ERROR: Invalid commit message format."
+    echo ""
+    echo "Expected: scope: Message"
+    echo "Allowed scopes: backend, mobile, shared, chore, docs, ci"
+    echo "Example: backend: Add new function to get list items"
+    echo ""
+    echo "Your message: $commit_msg"
+    echo ""
+    exit 1
+fi

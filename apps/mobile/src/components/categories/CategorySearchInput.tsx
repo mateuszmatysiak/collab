@@ -13,14 +13,14 @@ export function CategorySearchInput(props: CategorySearchInputProps) {
 
 	return (
 		<View className="relative">
-			<View className="absolute left-3 top-0 bottom-0 z-10 justify-center">
+			<View className="absolute left-4 top-0 bottom-0 z-10 justify-center">
 				<Icon as={Search} className="text-muted-foreground" size={18} />
 			</View>
 			<Input
 				placeholder="Szukaj kategorii..."
 				value={value}
 				onChangeText={onChangeText}
-				className="pl-10"
+				className="pl-11"
 			/>
 		</View>
 	);

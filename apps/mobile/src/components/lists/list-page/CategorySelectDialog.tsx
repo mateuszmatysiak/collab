@@ -217,7 +217,7 @@ export function CategorySelectDialog(props: CategorySelectDialogProps) {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-h-[80%]">
+			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Wybierz kategorię</DialogTitle>
 					<DialogDescription>
@@ -228,7 +228,7 @@ export function CategorySelectDialog(props: CategorySelectDialogProps) {
 				{!isCreatingNew ? (
 					<>
 						<View
-							className="flex-row items-center gap-2 rounded-lg border border-border bg-background px-3"
+							className="flex-row items-center gap-2 rounded-xl border border-input bg-card dark:bg-background px-3 h-12"
 							pointerEvents="box-none"
 						>
 							<Icon
@@ -241,7 +241,7 @@ export function CategorySelectDialog(props: CategorySelectDialogProps) {
 								placeholder="Szukaj kategorii..."
 								value={searchQuery}
 								onChangeText={setSearchQuery}
-								className="flex-1 border-0 bg-transparent px-0 shadow-none"
+								className="flex-1 border-0 bg-transparent dark:bg-transparent px-0 h-auto shadow-none"
 								maxLength={MAX_CATEGORY_NAME_LENGTH}
 							/>
 						</View>
@@ -410,7 +410,7 @@ export function CategorySelectDialog(props: CategorySelectDialogProps) {
 					open={!!actionDialogCategory}
 					onOpenChange={handleCloseActionDialog}
 				>
-					<DialogContent>
+					<DialogContent variant="centered">
 						<DialogHeader>
 							<DialogTitle>{actionDialogCategory.name}</DialogTitle>
 							<DialogDescription>

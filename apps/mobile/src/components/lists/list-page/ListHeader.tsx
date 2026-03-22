@@ -1,6 +1,6 @@
 import type { ListWithDetails } from "@collab-list/shared/types";
 import { router } from "expo-router";
-import { ArrowLeft, Trash2 } from "lucide-react-native";
+import { ArrowLeft, Search, Trash2 } from "lucide-react-native";
 import { useCallback, useRef, useState } from "react";
 import {
 	Alert,
@@ -78,10 +78,8 @@ function EditableListName(props: EditableListNameProps) {
 		return (
 			<TextInput
 				ref={inputRef}
-				className={cn(
-					"flex-1 text-xl font-bold text-foreground",
-					"border-b border-primary pb-1",
-				)}
+				className="text-xl font-bold text-foreground"
+				style={{ height: 28, padding: 0, margin: 0 }}
 				value={name}
 				onChangeText={setName}
 				onSubmitEditing={handleSubmitEditing}
@@ -95,21 +93,30 @@ function EditableListName(props: EditableListNameProps) {
 	}
 
 	return (
-		<Pressable
-			onPress={handleStartEditing}
-			className="flex-1 active:opacity-70"
-		>
-			<Text className="text-xl font-bold">{listName}</Text>
+		<Pressable onPress={handleStartEditing} className="active:opacity-70">
+			<Text className="text-xl font-bold" style={{ lineHeight: 28 }}>
+				{listName}
+			</Text>
 		</Pressable>
 	);
 }
 
 interface ListHeaderProps {
 	list: ListWithDetails;
+	onToggleSearch?: () => void;
+	isSearchVisible?: boolean;
+	completedCount?: number;
+	totalCount?: number;
 }
 
 export function ListHeader(props: ListHeaderProps) {
-	const { list } = props;
+	const {
+		list,
+		onToggleSearch,
+		isSearchVisible,
+		completedCount = 0,
+		totalCount = 0,
+	} = props;
 
 	const isOwner = useIsListOwner(list);
 	const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -155,35 +162,75 @@ export function ListHeader(props: ListHeaderProps) {
 
 	return (
 		<>
-			<View className="flex-row items-center gap-3 px-4 py-3">
-				<Pressable
-					onPress={handleGoBack}
-					className="size-10 items-center justify-center rounded-full active:bg-accent"
-					hitSlop={8}
-				>
-					<Icon as={ArrowLeft} className="text-foreground" size={20} />
-				</Pressable>
-
-				<EditableListName
-					key={list.name}
-					listName={list.name}
-					onSave={handleSaveName}
-					isUpdating={isUpdating}
-				/>
-
-				{isOwner && (
+			<View className="mx-5 mb-3 mt-3 px-1">
+				<View className="flex-row items-center gap-3">
 					<Pressable
-						onPress={handleDeleteConfirm}
-						className="size-10 items-center justify-center rounded-full active:bg-destructive/10"
+						onPress={handleGoBack}
+						className="size-11 items-center justify-center rounded-xl bg-card border border-border"
 						hitSlop={8}
 					>
-						<Icon as={Trash2} className="text-destructive" size={20} />
+						<Icon as={ArrowLeft} className="text-foreground" size={20} />
 					</Pressable>
-				)}
+
+					<View className="flex-1">
+						<EditableListName
+							key={list.name}
+							listName={list.name}
+							onSave={handleSaveName}
+							isUpdating={isUpdating}
+						/>
+						<Text className="text-sm text-muted-foreground">
+							{completedCount}/{totalCount} ukończono
+						</Text>
+					</View>
+
+					{onToggleSearch && (
+						<Pressable
+							onPress={onToggleSearch}
+							className={cn(
+								"size-11 items-center justify-center rounded-xl border border-border bg-card",
+								isSearchVisible && "bg-primary/10 border-primary/20",
+							)}
+							hitSlop={8}
+						>
+							<Icon
+								as={Search}
+								className={isSearchVisible ? "text-primary" : "text-foreground"}
+								size={20}
+							/>
+						</Pressable>
+					)}
+
+					{isOwner && (
+						<Pressable
+							onPress={handleDeleteConfirm}
+							className="size-11 items-center justify-center rounded-xl border border-border bg-card active:bg-destructive/10"
+							hitSlop={8}
+						>
+							<Icon as={Trash2} className="text-destructive" size={20} />
+						</Pressable>
+					)}
+				</View>
+
+				<View className="mt-3 gap-1">
+					<View className="h-2 overflow-hidden rounded-full bg-muted">
+						<View
+							className="h-2 rounded-full bg-primary"
+							style={{
+								width: `${totalCount === 0 ? 0 : (completedCount / totalCount) * 100}%`,
+							}}
+						/>
+					</View>
+					<Text className="text-xs text-muted-foreground">
+						{totalCount === 0
+							? "0% ukończono"
+							: `${Math.round((completedCount / totalCount) * 100)}% ukończono`}
+					</Text>
+				</View>
 			</View>
 
 			<Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-				<DialogContent>
+				<DialogContent variant="centered">
 					<DialogHeader>
 						<DialogTitle>Usuń listę</DialogTitle>
 						<DialogDescription>

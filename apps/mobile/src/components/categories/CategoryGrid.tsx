@@ -1,11 +1,6 @@
 import type { Category } from "@collab-list/shared/types";
-import { useMemo } from "react";
-import {
-	ActivityIndicator,
-	FlatList,
-	useWindowDimensions,
-	View,
-} from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Animated, FlatList, useWindowDimensions, View } from "react-native";
 import { useUserCategories } from "@/api/categories.api";
 import { Text } from "@/components/ui/Text";
 import { AddCategoryCard } from "./AddCategoryCard";
@@ -45,11 +40,7 @@ export function CategoryGrid(props: CategoryGridProps) {
 	}, [filteredCategories]);
 
 	if (isLoading) {
-		return (
-			<View className="flex-1 items-center justify-center">
-				<ActivityIndicator size="large" />
-			</View>
-		);
+		return <CategoryGridSkeleton itemWidth={itemWidth} />;
 	}
 
 	if (isError) {
@@ -69,7 +60,8 @@ export function CategoryGrid(props: CategoryGridProps) {
 				item.type === "add" ? "add-category" : item.data.id
 			}
 			numColumns={3}
-			contentContainerClassName="px-5 pb-4"
+			alwaysBounceVertical={false}
+			contentContainerClassName="px-5 pb-28"
 			renderItem={({ item }) => {
 				if (item.type === "add") {
 					return <AddCategoryCard width={itemWidth} />;
@@ -77,5 +69,53 @@ export function CategoryGrid(props: CategoryGridProps) {
 				return <CategoryCard category={item.data} width={itemWidth} />;
 			}}
 		/>
+	);
+}
+
+function SkeletonBox(props: { width: number }) {
+	const opacity = useRef(new Animated.Value(0.3)).current;
+
+	useEffect(() => {
+		const animation = Animated.loop(
+			Animated.sequence([
+				Animated.timing(opacity, {
+					toValue: 1,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+				Animated.timing(opacity, {
+					toValue: 0.3,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+			]),
+		);
+		animation.start();
+		return () => animation.stop();
+	}, [opacity]);
+
+	return (
+		<View className="m-1 aspect-square" style={{ width: props.width }}>
+			<Animated.View
+				style={{ opacity }}
+				className="flex-1 items-center justify-center rounded-2xl border border-border bg-muted p-3"
+			>
+				<View className="mb-2 size-12 rounded-xl bg-muted-foreground/10" />
+				<View className="h-4 w-16 rounded bg-muted-foreground/10" />
+			</Animated.View>
+		</View>
+	);
+}
+
+function CategoryGridSkeleton(props: { itemWidth: number }) {
+	const { itemWidth } = props;
+	const skeletonItems = Array.from({ length: 9 }, (_, i) => i);
+
+	return (
+		<View className="flex-row flex-wrap px-5">
+			{skeletonItems.map((i) => (
+				<SkeletonBox key={i} width={itemWidth} />
+			))}
+		</View>
 	);
 }

@@ -1,41 +1,43 @@
-import { ScrollView, View } from "react-native";
-import { Button } from "@/components/ui/Button";
-import { Text } from "@/components/ui/Text";
+import { View } from "react-native";
+import { GlassSelect } from "@/components/ui/GlassSelect";
 
-export type ItemFilter = "all" | "completed" | "incomplete";
+export type ItemFilter = "all" | "completed" | "incomplete" | "deleted";
 
-const FILTER_ITEMS: { value: ItemFilter; label: string }[] = [
-	{ value: "all", label: "Wszystkie statusy" },
+const FILTER_OPTIONS: { value: ItemFilter; label: string }[] = [
+	{ value: "all", label: "Wszystkie" },
+	{ value: "incomplete", label: "Aktywne" },
 	{ value: "completed", label: "Ukończone" },
-	{ value: "incomplete", label: "Nieukończone" },
+	{ value: "deleted", label: "Usunięte" },
 ];
 
 interface ItemFiltersProps {
 	filter: ItemFilter;
 	onFilterChange: (filter: ItemFilter) => void;
+	compact?: boolean;
 }
 
 export function ItemFilters(props: ItemFiltersProps) {
-	const { filter, onFilterChange } = props;
+	const { filter, onFilterChange, compact = false } = props;
+
+	if (compact) {
+		return (
+			<GlassSelect
+				options={FILTER_OPTIONS}
+				value={filter}
+				onValueChange={onFilterChange}
+				placeholder="Status"
+			/>
+		);
+	}
 
 	return (
-		<View className="px-6 pb-4">
-			<ScrollView
-				horizontal
-				showsHorizontalScrollIndicator={false}
-				contentContainerClassName="gap-2"
-			>
-				{FILTER_ITEMS.map((filterItem) => (
-					<Button
-						key={filterItem.value}
-						variant={filter === filterItem.value ? "default" : "outline"}
-						size="sm"
-						onPress={() => onFilterChange(filterItem.value)}
-					>
-						<Text>{filterItem.label}</Text>
-					</Button>
-				))}
-			</ScrollView>
+		<View className="px-6 pb-3">
+			<GlassSelect
+				options={FILTER_OPTIONS}
+				value={filter}
+				onValueChange={onFilterChange}
+				placeholder="Status"
+			/>
 		</View>
 	);
 }

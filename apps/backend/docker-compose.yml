@@ -19,6 +19,24 @@ services:
     networks:
       - backend
 
+  postgres-test:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: collab_list_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: pg_isready -U test -d collab_list_test
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - backend
+
 volumes:
   postgres_data:
 

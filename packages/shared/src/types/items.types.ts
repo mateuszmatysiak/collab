@@ -11,5 +11,6 @@ export interface ListItem {
 	categoryIcon: string | null;
 	categoryName: string | null;
 	position: number;
+	deletedAt: Date | null;
 	createdAt: Date;
 }
