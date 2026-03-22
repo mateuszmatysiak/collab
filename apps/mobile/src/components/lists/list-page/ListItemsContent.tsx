@@ -84,8 +84,7 @@ interface ListItemsContentProps {
 	filterCategoryId?: string | null;
 	filterCategoryType?: CategoryType | null;
 	searchQuery?: string;
-	isRefetching: boolean;
-	onRefresh: () => void;
+	onRefresh: () => Promise<void>;
 }
 
 export function ListItemsContent(props: ListItemsContentProps) {
@@ -97,9 +96,19 @@ export function ListItemsContent(props: ListItemsContentProps) {
 		filterCategoryId = null,
 		filterCategoryType = null,
 		searchQuery = "",
-		isRefetching,
 		onRefresh,
 	} = props;
+
+	const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+	const handleManualRefresh = useCallback(async () => {
+		setIsManualRefreshing(true);
+		try {
+			await onRefresh();
+		} finally {
+			setIsManualRefreshing(false);
+		}
+	}, [onRefresh]);
 
 	const listRef = useRef<DragListRef>(null);
 	const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -535,7 +544,10 @@ export function ListItemsContent(props: ListItemsContentProps) {
 					showsVerticalScrollIndicator={false}
 					keyboardShouldPersistTaps="handled"
 					refreshControl={
-						<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
+						<RefreshControl
+							refreshing={isManualRefreshing}
+							onRefresh={handleManualRefresh}
+						/>
 					}
 					ListEmptyComponent={
 						searchQuery ? (

@@ -33,7 +33,6 @@ function ListDetailContent(props: ListDetailContentProps) {
 	const {
 		data: items,
 		isError: isItemsError,
-		isRefetching,
 		isPlaceholderData,
 		refetch: refetchItems,
 	} = useItems(id);
@@ -61,9 +60,8 @@ function ListDetailContent(props: ListDetailContentProps) {
 		[],
 	);
 
-	const handleRefresh = useCallback(() => {
-		refetchItems();
-		refetchList();
+	const handleRefresh = useCallback(async () => {
+		await Promise.all([refetchItems(), refetchList()]);
 	}, [refetchItems, refetchList]);
 
 	const handleToggleSearch = useCallback(() => {
@@ -178,7 +176,6 @@ function ListDetailContent(props: ListDetailContentProps) {
 				filterCategoryId={selectedCategoryId}
 				filterCategoryType={selectedCategoryType}
 				searchQuery={debouncedSearch}
-				isRefetching={isRefetching && !isPlaceholderData}
 				onRefresh={handleRefresh}
 			/>
 		</View>
