@@ -17,7 +17,7 @@ export async function getUserCategories(userId: string) {
 		.where(
 			and(eq(userCategories.userId, userId), isNull(userCategories.listId)),
 		)
-		.orderBy(userCategories.name);
+		.orderBy(userCategories.createdAt);
 
 	return categories;
 }
@@ -59,7 +59,7 @@ export async function getCategoriesForList(listId: string, userId: string) {
 				eq(userCategories.listId, listId),
 			),
 		)
-		.orderBy(userCategories.name);
+		.orderBy(userCategories.createdAt);
 
 	const userCategoryNames = await db
 		.select({ name: userCategories.name })

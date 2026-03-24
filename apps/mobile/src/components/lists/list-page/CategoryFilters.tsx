@@ -39,9 +39,9 @@ export function CategoryFilters(props: CategoryFiltersProps) {
 			}
 		}
 
-		return allCategories
-			.filter((category) => uniqueCategoryIds.has(category.id))
-			.sort((a, b) => a.name.localeCompare(b.name));
+		return allCategories.filter((category) =>
+			uniqueCategoryIds.has(category.id),
+		);
 	}, [items, allCategories]);
 
 	const hasUncategorizedItems = useMemo(() => {
