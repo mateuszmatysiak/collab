@@ -19,7 +19,7 @@ const Switch = React.forwardRef<RNSwitch, SwitchProps>(
 				onValueChange={onValueChange}
 				disabled={disabled}
 				trackColor={{
-					false: "rgb(var(--muted))",
+					false: "rgb(var(--input))",
 					true: "rgb(var(--primary))",
 				}}
 				thumbColor={
@@ -27,6 +27,7 @@ const Switch = React.forwardRef<RNSwitch, SwitchProps>(
 						? "rgb(var(--primary-foreground))"
 						: "rgb(var(--muted-foreground))"
 				}
+				ios_backgroundColor={"rgb(var(--input))"}
 				{...restProps}
 			/>
 		);
