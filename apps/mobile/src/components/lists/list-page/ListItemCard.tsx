@@ -84,18 +84,17 @@ export function ListItemCard(props: ListItemCardProps) {
 
 	function handleTitlePress() {
 		setIsEditingTitle(true);
-		setEditingTitle(item.title);
 	}
 
 	function handleDescriptionPress() {
 		setIsEditingDescription(true);
-		setEditingDescription(item.description || "");
 	}
 
 	function handleTitleBlur() {
 		const trimmedTitle = editingTitle.trim();
 
 		if (trimmedTitle && trimmedTitle !== item.title) {
+			setEditingTitle(trimmedTitle);
 			updateItem({ title: trimmedTitle });
 		} else {
 			setEditingTitle(item.title);
@@ -106,6 +105,7 @@ export function ListItemCard(props: ListItemCardProps) {
 	function handleDescriptionBlur() {
 		const trimmedDescription = editingDescription.trim();
 		if (trimmedDescription !== (item.description ?? "")) {
+			setEditingDescription(trimmedDescription);
 			updateItem({ description: trimmedDescription });
 		} else {
 			setEditingDescription(item.description ?? "");
@@ -203,10 +203,10 @@ export function ListItemCard(props: ListItemCardProps) {
 								className={cn(
 									"text-base font-medium",
 									item.isCompleted && "line-through text-muted-foreground",
-									!item.title && "text-muted-foreground",
+									!editingTitle && "text-muted-foreground",
 								)}
 							>
-								{item.title || "Tytuł elementu..."}
+								{editingTitle || "Tytuł elementu..."}
 							</Text>
 						</Pressable>
 					)}
@@ -239,12 +239,12 @@ export function ListItemCard(props: ListItemCardProps) {
 							<Text
 								className={cn(
 									"text-sm",
-									item.description
+									editingDescription
 										? "text-foreground"
 										: "text-muted-foreground",
 								)}
 							>
-								{item.description || "Dodatkowy opis..."}
+								{editingDescription || "Dodatkowy opis..."}
 							</Text>
 						</Pressable>
 					)}

@@ -85,6 +85,15 @@ export const useUpdateItem = (listId: string, itemId: string) => {
 
 			return { previousItems };
 		},
+		onSuccess: (updatedItem) => {
+			queryClient.setQueryData<ListItem[]>(
+				queryKeys.lists.items(listId),
+				(oldItems = []) =>
+					oldItems.map((item) =>
+						item.id === itemId ? { ...item, ...updatedItem } : item,
+					),
+			);
+		},
 		onError: (_err, _variables, context) => {
 			if (context?.previousItems) {
 				queryClient.setQueryData(
@@ -94,9 +103,6 @@ export const useUpdateItem = (listId: string, itemId: string) => {
 			}
 		},
 		onSettled: () => {
-			queryClient.invalidateQueries({
-				queryKey: queryKeys.lists.items(listId),
-			});
 			queryClient.invalidateQueries({
 				queryKey: queryKeys.lists.all,
 			});
