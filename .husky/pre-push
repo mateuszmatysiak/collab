@@ -1,2 +1,2 @@
 pnpm typecheck
-pnpm test
+pnpm test:mobile
