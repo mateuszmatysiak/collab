@@ -1,6 +1,6 @@
 import { Alert } from "react-native";
 import ListsScreen from "../../../../app/(tabs)/lists/index";
-import { createList, TEST_USER } from "../setup/mocks/data";
+import { createList, TEST_USER } from "../../helpers/data";
 import {
 	fireEvent,
 	mockApiClient,
@@ -8,7 +8,7 @@ import {
 	renderWithProviders,
 	screen,
 	waitFor,
-} from "../setup/test-utils";
+} from "../../helpers/test-utils";
 
 beforeEach(() => {
 	jest.clearAllMocks();

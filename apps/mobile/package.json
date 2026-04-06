@@ -14,7 +14,7 @@
 		"web:prod": "dotenv -e .env -- expo start --web",
 		"build:android:preview": "eas build --platform android --profile preview --local",
 		"typecheck": "tsc --noEmit",
-		"test": "jest --detectOpenHandles",
+		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:coverage": "jest --coverage"
 	},
@@ -53,6 +53,7 @@
 		"zod": "4.1.13"
 	},
 	"devDependencies": {
+		"@tanstack/query-core": "5.96.2",
 		"@testing-library/jest-native": "5.4.3",
 		"@testing-library/react-native": "13.3.3",
 		"@types/jest": "29.5.14",

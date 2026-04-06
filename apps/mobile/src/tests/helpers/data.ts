@@ -1,19 +1,14 @@
 import type {
+	Category,
 	ListCategory,
 	ListItem,
 	ListWithDetails,
-	SharesAuthor,
-	ShareWithUser,
 } from "@collab-list/shared/types";
 
 let idCounter = 0;
 
 function nextId() {
 	return `test-id-${++idCounter}`;
-}
-
-export function resetIdCounter() {
-	idCounter = 0;
 }
 
 export const TEST_USER = {
@@ -67,23 +62,13 @@ export function createItem(
 	};
 }
 
-export function createShare(overrides?: Partial<ShareWithUser>): ShareWithUser {
+export function createUserCategory(overrides?: Partial<Category>): Category {
+	const id = nextId();
 	return {
-		id: nextId(),
-		userId: OTHER_USER.id,
-		userName: OTHER_USER.name,
-		userLogin: OTHER_USER.login,
-		role: "editor",
+		id,
+		name: `Category ${id}`,
+		icon: "ShoppingCart",
 		createdAt: new Date("2024-01-01"),
-		...overrides,
-	};
-}
-
-export function createAuthor(overrides?: Partial<SharesAuthor>): SharesAuthor {
-	return {
-		id: TEST_USER.id,
-		name: TEST_USER.name,
-		login: TEST_USER.login,
 		...overrides,
 	};
 }

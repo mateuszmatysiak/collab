@@ -4,14 +4,14 @@ import {
 	createItem,
 	createList,
 	TEST_USER,
-} from "../setup/mocks/data";
+} from "../../helpers/data";
 import {
 	fireEvent,
 	mockApiClient,
 	renderWithProviders,
 	screen,
 	waitFor,
-} from "../setup/test-utils";
+} from "../../helpers/test-utils";
 
 const LIST_ID = "list-1";
 

@@ -1,11 +1,11 @@
 import ListsScreen from "../../../../app/(tabs)/lists/index";
-import { createList, OTHER_USER, TEST_USER } from "../setup/mocks/data";
+import { createList, OTHER_USER, TEST_USER } from "../../helpers/data";
 import {
 	mockApiClient,
 	renderWithProviders,
 	screen,
 	waitFor,
-} from "../setup/test-utils";
+} from "../../helpers/test-utils";
 
 beforeEach(() => {
 	jest.clearAllMocks();

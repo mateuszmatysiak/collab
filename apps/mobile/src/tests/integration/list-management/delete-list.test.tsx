@@ -1,6 +1,6 @@
 import { Alert } from "react-native";
 import { ListDetailContent } from "../../../../app/(tabs)/lists/[id]";
-import { createList, OTHER_USER, TEST_USER } from "../setup/mocks/data";
+import { createList, OTHER_USER, TEST_USER } from "../../helpers/data";
 import {
 	fireEvent,
 	mockApiClient,
@@ -8,7 +8,7 @@ import {
 	renderWithProviders,
 	screen,
 	waitFor,
-} from "../setup/test-utils";
+} from "../../helpers/test-utils";
 
 const LIST_ID = "list-1";
 

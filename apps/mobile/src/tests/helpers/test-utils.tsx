@@ -1,5 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type RenderOptions, render } from "@testing-library/react-native";
+import {
+	act,
+	cleanup,
+	type RenderOptions,
+	render,
+} from "@testing-library/react-native";
 import { router } from "expo-router";
 import type React from "react";
 import { apiClient } from "@/api/client";
@@ -26,6 +31,8 @@ afterEach(async () => {
 		jest.runOnlyPendingTimers();
 	});
 
+	cleanup();
+
 	for (const client of activeQueryClients) {
 		client.cancelQueries();
 		client.clear();
@@ -51,7 +58,7 @@ interface TestWrapperOptions {
 	queryClient?: QueryClient;
 }
 
-export function createTestWrapper(options: TestWrapperOptions = {}) {
+function createTestWrapper(options: TestWrapperOptions = {}) {
 	const queryClient = options.queryClient ?? createTestQueryClient();
 
 	return function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -86,5 +93,4 @@ export {
 	fireEvent,
 	screen,
 	waitFor,
-	within,
 } from "@testing-library/react-native";

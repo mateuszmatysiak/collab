@@ -1,5 +1,5 @@
 import { ListDetailContent } from "../../../../app/(tabs)/lists/[id]";
-import { createItem, createList, TEST_USER } from "../setup/mocks/data";
+import { createItem, createList, TEST_USER } from "../../helpers/data";
 import {
 	act,
 	fireEvent,
@@ -7,7 +7,7 @@ import {
 	renderWithProviders,
 	screen,
 	waitFor,
-} from "../setup/test-utils";
+} from "../../helpers/test-utils";
 
 const LIST_ID = "list-1";
 
