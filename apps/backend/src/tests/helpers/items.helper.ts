@@ -12,7 +12,7 @@ interface ItemResponse {
 
 let itemCounter = 0;
 
-export function generateItemTitle(): string {
+function generateItemTitle(): string {
 	itemCounter++;
 	return `Test Item ${itemCounter}_${Date.now()}`;
 }
@@ -36,10 +36,6 @@ export async function createItem(
 		);
 	}
 
-	const data = await response.json();
-	return data.item as ItemResponse;
-}
-
-export function resetItemCounter() {
-	itemCounter = 0;
+	const data = (await response.json()) as { item: ItemResponse };
+	return data.item;
 }

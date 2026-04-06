@@ -1,4 +1,4 @@
-import type { AppType } from "../../src/app";
+import type { AppType } from "../../app";
 
 interface User {
 	id: string;
@@ -15,11 +15,6 @@ interface AuthResponse {
 
 interface RegisterPayload {
 	name: string;
-	login: string;
-	password: string;
-}
-
-interface LoginPayload {
 	login: string;
 	password: string;
 }
@@ -65,29 +60,7 @@ export async function registerUser(
 	return data;
 }
 
-export async function loginUser(
-	app: AppType,
-	payload: LoginPayload,
-): Promise<AuthResponse> {
-	const response = await app.request("/api/auth/login", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(payload),
-	});
-
-	if (!response.ok) {
-		const error = await response.json();
-		throw new Error(
-			`Failed to login user: ${response.status} - ${JSON.stringify(error)}`,
-		);
-	}
-
-	return response.json() as Promise<AuthResponse>;
-}
-
-export function createAuthenticatedRequest(app: AppType, accessToken: string) {
+function createAuthenticatedRequest(app: AppType, accessToken: string) {
 	return async (path: string, options: RequestInit = {}): Promise<Response> => {
 		const headers = new Headers(options.headers);
 		headers.set("Authorization", `Bearer ${accessToken}`);

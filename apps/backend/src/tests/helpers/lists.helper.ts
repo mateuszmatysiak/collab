@@ -7,7 +7,7 @@ interface ListResponse {
 
 let listCounter = 0;
 
-export function generateListName(): string {
+function generateListName(): string {
 	listCounter++;
 	return `Test List ${listCounter}_${Date.now()}`;
 }
@@ -30,10 +30,6 @@ export async function createList(
 		);
 	}
 
-	const data = await response.json();
-	return data.list as ListResponse;
-}
-
-export function resetListCounter() {
-	listCounter = 0;
+	const data = (await response.json()) as { list: ListResponse };
+	return data.list;
 }

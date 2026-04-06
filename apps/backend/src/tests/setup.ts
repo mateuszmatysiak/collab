@@ -4,9 +4,9 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, beforeEach } from "vitest";
-import * as schema from "../src/db/schema";
+import * as schema from "../db/schema";
 
-config({ path: resolve(__dirname, "../.env.test") });
+config({ path: resolve(__dirname, "../../.env.test") });
 
 let testClient: ReturnType<typeof postgres> | null = null;
 let testDb: ReturnType<typeof drizzle<typeof schema>> | null = null;

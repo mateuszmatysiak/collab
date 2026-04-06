@@ -3,9 +3,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
 	test: {
-		include: ["tests/**/*.test.ts"],
-		globalSetup: ["./tests/global-setup.ts"],
-		setupFiles: ["./tests/setup.ts"],
+		include: ["src/tests/**/*.test.ts"],
+		globalSetup: ["./src/tests/global-setup.ts"],
+		setupFiles: ["./src/tests/setup.ts"],
 		environment: "node",
 
 		fileParallelism: false,
@@ -17,7 +17,12 @@ export default defineConfig({
 			provider: "v8",
 			reporter: ["text", "json", "html"],
 			include: ["src/**/*.ts"],
-			exclude: ["src/index.ts", "src/types/**", "src/db/seed.ts"],
+			exclude: [
+				"src/index.ts",
+				"src/types/**",
+				"src/db/seed.ts",
+				"src/tests/**",
+			],
 		},
 
 		alias: {

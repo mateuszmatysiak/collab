@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
-config({ path: resolve(__dirname, "../.env.test") });
+config({ path: resolve(__dirname, "../../.env.test") });
 
 export async function setup() {
 	const databaseUrl = process.env.DATABASE_URL;
@@ -22,7 +22,7 @@ export async function setup() {
 
 	try {
 		await migrate(db, {
-			migrationsFolder: resolve(__dirname, "../drizzle"),
+			migrationsFolder: resolve(__dirname, "../../drizzle"),
 		});
 		console.log("[Global Setup] Migrations complete");
 	} catch (error) {

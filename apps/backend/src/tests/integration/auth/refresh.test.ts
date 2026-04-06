@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../../../src/app";
+import { createApp } from "../../../app";
 import { registerUser, resetUserCounter } from "../../helpers/auth.helper";
 
 describe("POST /api/auth/refresh", () => {
