@@ -1,0 +1,13 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(pnpm typecheck:*)",
+			"Bash(pnpm lint:*)",
+			"Bash(pnpm knip:*)"
+		]
+	},
+	"attribution": {
+		"commit": "",
+		"pr": ""
+	}
+}
