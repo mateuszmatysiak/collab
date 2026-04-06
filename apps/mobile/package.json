@@ -13,7 +13,10 @@
 		"ios:prod": "dotenv -e .env -- expo start --ios",
 		"web:prod": "dotenv -e .env -- expo start --web",
 		"build:android:preview": "eas build --platform android --profile preview --local",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "jest --detectOpenHandles",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
 	},
 	"dependencies": {
 		"@collab-list/shared": "workspace:*",
@@ -50,8 +53,14 @@
 		"zod": "4.1.13"
 	},
 	"devDependencies": {
+		"@testing-library/jest-native": "5.4.3",
+		"@testing-library/react-native": "13.3.3",
+		"@types/jest": "29.5.14",
 		"@types/react": "19.1.10",
 		"dotenv-cli": "7.4.2",
+		"jest": "29.7.0",
+		"jest-expo": "55.0.13",
+		"react-test-renderer": "19.1.0",
 		"tailwindcss": "3.4.17"
 	}
 }

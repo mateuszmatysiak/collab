@@ -22,7 +22,8 @@
 		"db:seed": "pnpm -C apps/backend db:seed",
 		"db:studio": "pnpm -C apps/backend db:studio",
 		"knip": "knip",
-		"test": "pnpm -C apps/backend test",
+		"test:backend": "pnpm -C apps/backend test",
+		"test:mobile": "pnpm -C apps/mobile test",
 		"prepare": "husky"
 	},
 	"lint-staged": {

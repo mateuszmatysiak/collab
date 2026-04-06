@@ -17,11 +17,84 @@ import { Icon } from "@/components/ui/Icon";
 import { Text } from "@/components/ui/Text";
 import { useDebounce } from "@/hooks/useDebounce";
 
+function SkeletonPulse(props: {
+	children: React.ReactNode;
+	className?: string;
+}) {
+	const opacity = useRef(new Animated.Value(0.3)).current;
+
+	useEffect(() => {
+		const animation = Animated.loop(
+			Animated.sequence([
+				Animated.timing(opacity, {
+					toValue: 1,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+				Animated.timing(opacity, {
+					toValue: 0.3,
+					duration: 800,
+					useNativeDriver: true,
+				}),
+			]),
+		);
+		animation.start();
+		return () => animation.stop();
+	}, [opacity]);
+
+	return (
+		<Animated.View style={{ opacity }} className={props.className}>
+			{props.children}
+		</Animated.View>
+	);
+}
+
+function ListItemSkeleton() {
+	return (
+		<View className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4">
+			<View className="size-5 rounded bg-muted-foreground/10" />
+			<View className="flex-1 gap-2">
+				<View className="h-4 w-3/4 rounded bg-muted-foreground/10" />
+			</View>
+			<View className="size-5 rounded bg-muted-foreground/10" />
+		</View>
+	);
+}
+
+function ListDetailSkeleton() {
+	return (
+		<View className="flex-1 bg-background">
+			<SkeletonPulse className="px-5 pt-4 pb-3">
+				<View className="flex-row items-center gap-3 mb-4">
+					<View className="size-10 rounded-full bg-muted-foreground/10" />
+					<View className="flex-1 gap-2">
+						<View className="h-6 w-48 rounded bg-muted-foreground/10" />
+						<View className="h-3 w-24 rounded bg-muted-foreground/10" />
+					</View>
+				</View>
+
+				<View className="flex-row gap-3 mb-4">
+					<View className="h-10 flex-1 rounded-xl bg-muted-foreground/10" />
+					<View className="h-10 flex-1 rounded-xl bg-muted-foreground/10" />
+				</View>
+
+				<View className="gap-2">
+					<ListItemSkeleton />
+					<ListItemSkeleton />
+					<ListItemSkeleton />
+					<ListItemSkeleton />
+					<ListItemSkeleton />
+				</View>
+			</SkeletonPulse>
+		</View>
+	);
+}
+
 interface ListDetailContentProps {
 	id: string;
 }
 
-function ListDetailContent(props: ListDetailContentProps) {
+export function ListDetailContent(props: ListDetailContentProps) {
 	const { id } = props;
 
 	const {
@@ -178,79 +251,6 @@ function ListDetailContent(props: ListDetailContentProps) {
 				searchQuery={debouncedSearch}
 				onRefresh={handleRefresh}
 			/>
-		</View>
-	);
-}
-
-function SkeletonPulse(props: {
-	children: React.ReactNode;
-	className?: string;
-}) {
-	const opacity = useRef(new Animated.Value(0.3)).current;
-
-	useEffect(() => {
-		const animation = Animated.loop(
-			Animated.sequence([
-				Animated.timing(opacity, {
-					toValue: 1,
-					duration: 800,
-					useNativeDriver: true,
-				}),
-				Animated.timing(opacity, {
-					toValue: 0.3,
-					duration: 800,
-					useNativeDriver: true,
-				}),
-			]),
-		);
-		animation.start();
-		return () => animation.stop();
-	}, [opacity]);
-
-	return (
-		<Animated.View style={{ opacity }} className={props.className}>
-			{props.children}
-		</Animated.View>
-	);
-}
-
-function ListItemSkeleton() {
-	return (
-		<View className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4">
-			<View className="size-5 rounded bg-muted-foreground/10" />
-			<View className="flex-1 gap-2">
-				<View className="h-4 w-3/4 rounded bg-muted-foreground/10" />
-			</View>
-			<View className="size-5 rounded bg-muted-foreground/10" />
-		</View>
-	);
-}
-
-function ListDetailSkeleton() {
-	return (
-		<View className="flex-1 bg-background">
-			<SkeletonPulse className="px-5 pt-4 pb-3">
-				<View className="flex-row items-center gap-3 mb-4">
-					<View className="size-10 rounded-full bg-muted-foreground/10" />
-					<View className="flex-1 gap-2">
-						<View className="h-6 w-48 rounded bg-muted-foreground/10" />
-						<View className="h-3 w-24 rounded bg-muted-foreground/10" />
-					</View>
-				</View>
-
-				<View className="flex-row gap-3 mb-4">
-					<View className="h-10 flex-1 rounded-xl bg-muted-foreground/10" />
-					<View className="h-10 flex-1 rounded-xl bg-muted-foreground/10" />
-				</View>
-
-				<View className="gap-2">
-					<ListItemSkeleton />
-					<ListItemSkeleton />
-					<ListItemSkeleton />
-					<ListItemSkeleton />
-					<ListItemSkeleton />
-				</View>
-			</SkeletonPulse>
 		</View>
 	);
 }
